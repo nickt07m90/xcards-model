@@ -135,6 +135,7 @@
             color: var(--text-sub); letter-spacing: 0.5px; 
             border: 1px solid var(--border); padding: 3px 6px; border-radius: 4px;
         }
+        .kickoff-tag { font-size: 12px; font-weight: 600; color: var(--text-main); font-variant-numeric: tabular-nums; }
 
         /* TEAMS */
         .teams-wrapper { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 0 4px;}
@@ -176,7 +177,7 @@
             border-radius: 3px; 
             overflow: hidden; 
             margin-bottom: 4px; 
-            background: var(--odd-btn-bg); /* Track color */
+            background: var(--odd-btn-bg);
         }
         .bar-segment { height: 100%; transition: width 0.3s, background-color 0.3s; }
 
@@ -326,7 +327,6 @@
             document.getElementById('btnPrev').className = currentDateIndex === 0 ? 'nav-arrow disabled' : 'nav-arrow';
             document.getElementById('btnNext').className = currentDateIndex === uniqueDates.length - 1 ? 'nav-arrow disabled' : 'nav-arrow';
             
-            // --- UPDATED LOGIC: Filter dropdown based on DATE ---
             const matchesOnDate = allMatches.filter(r => r[0] === dateStr);
             updateLeagueDropdown(matchesOnDate);
             
@@ -339,6 +339,13 @@
                 currentDateIndex = newIndex;
                 updateDateDisplay();
             }
+        }
+
+        // --- TIME FORMATTER (UNIX TO UK) ---
+        function formatUnixTime(unix) {
+            if (!unix || isNaN(unix)) return "--:--";
+            const date = new Date(unix * 1000);
+            return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
         }
 
         // --- FILTER & RENDER ---
@@ -377,19 +384,17 @@
                 const awayLogo = row[7], away = row[8];
                 const ref = row[12], refApps = row[13], refAvg = row[14];
                 const oddsH = row[15] || "-", oddsD = row[16] || "-", oddsA = row[17] || "-";
-                // S = 18 (H2H Avg), T = 19 (H2H Count)
                 const h2hAvg = parseFloat(row[18]||0).toFixed(2);
                 const h2hCount = row[19] || "0";
-
                 const hXc = parseFloat(row[20]||0).toFixed(2);
                 const aXc = parseFloat(row[21]||0).toFixed(2);
                 const totalXc = parseFloat(row[22]||0).toFixed(2);
+                const kickoffTime = formatUnixTime(row[45]); // Column AT is index 45
 
                 const heroColorClass = getHeatmapClass(totalXc);
                 const refColorClass = getHeatmapClass(refAvg);
-                const h2hColorClass = getHeatmapClass(h2hAvg); // Apply heatmap to H2H
+                const h2hColorClass = getHeatmapClass(h2hAvg);
 
-                // --- BAR LOGIC (LOWERED THRESHOLD TO 60%) ---
                 const hVal = parseFloat(hXc), aVal = parseFloat(aXc);
                 const total = hVal + aVal;
                 let homePerc = 50, awayPerc = 50;
@@ -399,25 +404,18 @@
                     awayPerc = 100 - homePerc;
                 }
 
-                let homeBarColor = 'var(--text-sub)'; 
-                let awayBarColor = 'var(--text-sub)'; 
-                let homeBarOp = '0.3';
-                let awayBarOp = '0.3';
+                let homeBarColor = 'var(--text-sub)', awayBarColor = 'var(--text-sub)'; 
+                let homeBarOp = '0.3', awayBarOp = '0.3';
 
-                // LOWERED THRESHOLD: 60%
-                if (homePerc >= 60) { 
-                    homeBarColor = 'var(--val-hot)';
-                    homeBarOp = '1';
-                } else if (awayPerc >= 60) { 
-                    awayBarColor = 'var(--val-hot)';
-                    awayBarOp = '1';
-                }
+                if (homePerc >= 60) { homeBarColor = 'var(--val-hot)'; homeBarOp = '1'; } 
+                else if (awayPerc >= 60) { awayBarColor = 'var(--val-hot)'; awayBarOp = '1'; }
 
                 html += `
                     <div class="card">
                         <div class="card-body">
                             <div class="match-header">
                                 <span class="league-tag">${league}</span>
+                                <span class="kickoff-tag">${kickoffTime}</span>
                             </div>
 
                             <div class="teams-wrapper">
