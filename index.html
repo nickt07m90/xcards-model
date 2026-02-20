@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="xCards Model">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://c.files.bbci.co.uk/348a/live/6aa8dff0-7515-11ef-b2b6-fb0fab5e97c6.jpg">
+    <title>xCards Tracker</title>
+    <style>
+        /* --- CSS VARIABLES --- */
+        :root {
+            --bg-body: #f2f2f7;
+            --bg-header: rgba(242, 242, 247, 0.98);
+            --bg-card: #ffffff;
+            --bg-footer: #f9f9f9; 
+            --text-main: #000000;
+            --text-sub: #8e8e93;
+            --border: #d1d1d6;
+
+            /* Betting Colors */
+            --accent-blue: #007aff;
+            --val-hot: #34c759; 
+            --val-warm: #ffcc00; 
+            --val-cold: #8e8e93;
+
+            /* Referee Colors */
+            --ref-strict: #ff3b30;
+            --ref-avg: #ffcc00;
+            --ref-lenient: #34c759;
+
+            --odd-btn-bg: #ffffff;
+            --odd-btn-border: #d1d1d6;
+            --odd-text: #000000;
+        }
+
+        /* DARK MODE */
+        [data-theme="dark"] {
+            --bg-body: #000000;
+            --bg-header: rgba(28, 28, 30, 0.98);
+            --bg-card: #1c1c1e;
+            --bg-footer: #252527; 
+            --text-main: #ffffff;
+            --text-sub: #98989d;
+            --border: #2c2c2e;
+
+            --accent-blue: #0a84ff;
+            --val-hot: #30d158;
+            --val-warm: #ffd60a;
+            --val-cold: #636366;
+
+            --odd-btn-bg: #2c2c2e;
+            --odd-btn-border: #3a3a3c;
+            --odd-text: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-body);
+            margin: 0;
+            padding-top: 170px; 
+            padding-left: 12px; 
+            padding-right: 12px; 
+            padding-bottom: 40px;
+            color: var(--text-main);
+            transition: background-color 0.3s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* HEADER */
+        .fixed-header {
+            position: fixed; top: 0; left: 0; right: 0;
+            background-color: var(--bg-header);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            z-index: 1000;
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex; flex-direction: column; gap: 8px;
+        }
+
+        .header-top { display: flex; justify-content: space-between; align-items: center; }
+        h1 { font-size: 18px; font-weight: 800; margin: 0; letter-spacing: -0.5px; }
+
+        .btn-group { display: flex; gap: 8px; }
+        .icon-btn {
+            background: var(--bg-card); border: 1px solid var(--border);
+            color: var(--text-main); width: 28px; height: 28px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 14px; cursor: pointer;
+        }
+
+        /* DATE NAV */
+        .date-nav {
+            display: flex; align-items: center; justify-content: space-between;
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 10px; padding: 2px;
+            height: 40px;
+        }
+        .nav-arrow {
+            width: 40px; height: 100%; display: flex; align-items: center; justify-content: center;
+            font-size: 18px; color: var(--accent-blue); cursor: pointer;
+            user-select: none;
+        }
+        .nav-arrow.disabled { color: var(--text-sub); opacity: 0.3; }
+
+        .date-display {
+            font-size: 14px; font-weight: 700; color: var(--text-main);
+            text-align: center; flex: 1; display: flex; flex-direction: column; line-height: 1.1;
+        }
+        .date-sub { font-size: 10px; color: var(--text-sub); font-weight: 500; }
+
+        /* FILTER ROW */
+        .filter-row { display: flex; gap: 8px; }
+        select {
+            flex: 1; font-size: 12px; padding: 6px 10px; border-radius: 8px;
+            border: 1px solid var(--border); background-color: var(--bg-card);
+            color: var(--text-main); appearance: none;
+        }
+
+        /* CARD STRUCTURE */
+        .card {
+            background: var(--bg-card); border-radius: 12px; 
+            margin-bottom: 12px; content-visibility: auto; contain: content;
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            overflow: hidden; 
+        }
+
+        .card-body { padding: 16px 16px 12px 16px; }
+
+        .match-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .league-tag { 
+            font-size: 10px; font-weight: 700; text-transform: uppercase; 
+            color: var(--text-sub); letter-spacing: 0.5px; 
+            border: 1px solid var(--border); padding: 3px 6px; border-radius: 4px;
+        }
+
+        /* TEAMS */
+        .teams-wrapper { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 0 4px;}
+        .team-block { display: flex; flex-direction: column; align-items: center; width: 40%; text-align: center; }
+        .team-logo { width: 42px; height: 42px; object-fit: contain; margin-bottom: 8px; }
+
+        .team-name { 
+            font-size: 13px; font-weight: 700; line-height: 1.2; width: 100%; 
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+            overflow: hidden; text-overflow: ellipsis; white-space: normal;
+            height: 32px; display: flex; align-items: center; justify-content: center;
+        }
+
+        .vs-badge { color: var(--text-sub); font-size: 10px; font-weight: 600; margin-top: -36px; opacity: 0.5; }
+
+        /* ODDS */
+        .odds-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+        .odd-btn { 
+            background: var(--odd-btn-bg); border: 1px solid var(--odd-btn-border); 
+            border-radius: 6px; padding: 8px 2px; text-align: center; 
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05); 
+        }
+        .odd-label { color: var(--text-sub); font-size: 9px; font-weight: 700; margin-bottom: 2px; }
+        .odd-val { color: var(--odd-text); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+        /* STATS */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 0; align-items: center; padding-top: 14px; border-top: 1px solid var(--border); }
+        .stat-box { text-align: center; }
+        .stat-label { font-size: 9px; color: var(--text-sub); text-transform: uppercase; margin-bottom: 4px; font-weight: 700; }
+        .stat-value { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+        .stat-hero .stat-value { font-size: 32px; font-weight: 800; line-height: 1; letter-spacing: -1px; }
+
+        /* DYNAMIC BAR */
+        .bar-container { 
+            grid-column: 1 / 4; 
+            display: flex; 
+            height: 6px; 
+            margin-top: 10px; 
+            border-radius: 3px; 
+            overflow: hidden; 
+            margin-bottom: 4px; 
+            background: var(--odd-btn-bg); /* Track color */
+        }
+        .bar-segment { height: 100%; transition: width 0.3s, background-color 0.3s; }
+
+        /* H2H SECTION */
+        .h2h-row {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px dashed var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: var(--text-sub);
+        }
+        .h2h-value { font-weight: 700; font-size: 12px; }
+
+        /* CARD FOOTER */
+        .card-footer {
+            background-color: var(--bg-footer);
+            border-top: 1px solid var(--border);
+            padding: 10px 16px;
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 11px;
+            color: var(--text-sub);
+        }
+        .ref-name { font-weight: 600; display: flex; align-items: center; gap: 6px; }
+
+        .color-hot { color: var(--val-hot); } .color-warm { color: var(--val-warm); } .color-neutral { color: var(--accent-blue); }
+        .ref-strict { color: var(--ref-strict); } .ref-avg { color: var(--text-main); }
+
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-sub); }
+    </style>
+</head>
+<body>
+
+    <div class="fixed-header">
+        <div class="header-top">
+            <h1>Card Model <span id="statusDot" style="height:6px;width:6px;background:transparent;border-radius:50%;display:inline-block;vertical-align:middle;margin-left:6px;"></span></h1>
+            <div class="btn-group">
+                <button class="icon-btn" onclick="resetFilters()">↺</button>
+                <button class="icon-btn" onclick="toggleTheme()" id="themeIcon">☀️</button>
+            </div>
+        </div>
+
+        <div class="date-nav">
+            <div class="nav-arrow" id="btnPrev" onclick="changeDate(-1)">❮</div>
+            <div class="date-display">
+                <span id="displayDate">Loading...</span>
+                <span id="displayDay" class="date-sub"></span>
+            </div>
+            <div class="nav-arrow" id="btnNext" onclick="changeDate(1)">❯</div>
+        </div>
+
+        <div class="filter-row">
+            <select id="leagueFilter" onchange="applyFilters()"><option value="All">All Leagues</option></select>
+            <select id="sortFilter" onchange="applyFilters()">
+                <option value="Time">Sort: Time</option>
+                <option value="High">Sort: High xC</option>
+                <option value="Low">Sort: Low xC</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="app-container"></div>
+
+    <script>
+        // --- GLOBAL STATE ---
+        let allMatches = []; 
+        let uniqueDates = [];
+        let currentDateIndex = 0;
+
+        // --- THEME ---
+        function toggleTheme() {
+            const html = document.documentElement;
+            const current = html.getAttribute('data-theme');
+            const icon = document.getElementById('themeIcon');
+            if (current === 'dark') {
+                html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); icon.innerText = '🌙';
+            } else {
+                html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); icon.innerText = '☀️';
+            }
+        }
+        (function() {
+            const saved = localStorage.getItem('theme');
+            if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+        })();
+
+        // --- INIT ---
+        const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTp_OY8KN8aMK1K24FLjz6toJt9mMFsB129jqeUznt-48NJmcMsS2WLNkrcfyyAyu1lqYup6fJkK1Rp/pub?gid=315027471&single=true&output=csv'; 
+
+        async function init() {
+            const dot = document.getElementById('statusDot');
+            const cachedData = localStorage.getItem('match_data_v1');
+
+            if (!cachedData) { 
+                document.getElementById('app-container').innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-sub);">Loading data...</div>'; 
+            } else { 
+                processData(cachedData); 
+            }
+
+            try {
+                dot.style.background = '#007aff';
+                const response = await fetch(SHEET_CSV_URL);
+                const data = await response.text();
+                localStorage.setItem('match_data_v1', data);
+                processData(data);
+                dot.style.background = '#34c759';
+                setTimeout(() => { dot.style.background = 'transparent'; }, 2000);
+            } catch (err) {
+                dot.style.background = 'transparent';
+                if(!cachedData) showEmptyState("Offline", "Check internet connection.");
+            }
+        }
+
+        function showEmptyState(title, subtitle) {
+            document.getElementById('app-container').innerHTML = `
+                <div class="empty-state">
+                    <span style="font-size:40px;opacity:0.5;">⚽</span>
+                    <p style="font-weight:700; font-size:16px; margin:10px 0 0 0;">${title}</p>
+                    <p style="font-size:13px; margin:0;">${subtitle}</p>
+                </div>
+            `;
+        }
+
+        function processData(csvText) {
+            const rows = parseCSV(csvText);
+            allMatches = rows.slice(1).filter(r => r.length > 6 && r[6]);
+            const dateSet = new Set(allMatches.map(r=>r[0]).filter(Boolean));
+            uniqueDates = Array.from(dateSet).sort();
+
+            if (uniqueDates.length > 0) {
+                if (currentDateIndex >= uniqueDates.length) currentDateIndex = 0;
+                updateDateDisplay();
+            } else {
+                 showEmptyState("No Data", "The spreadsheet seems empty.");
+            }
+        }
+
+        function updateDateDisplay() {
+            if (uniqueDates.length === 0) return;
+            const dateStr = uniqueDates[currentDateIndex];
+            const d = new Date(dateStr);
+            document.getElementById('displayDate').innerText = dateStr;
+            if (!isNaN(d)) {
+                document.getElementById('displayDay').innerText = d.toLocaleDateString('en-GB', { weekday: 'long' });
+            }
+            document.getElementById('btnPrev').className = currentDateIndex === 0 ? 'nav-arrow disabled' : 'nav-arrow';
+            document.getElementById('btnNext').className = currentDateIndex === uniqueDates.length - 1 ? 'nav-arrow disabled' : 'nav-arrow';
+            
+            // --- UPDATED LOGIC: Filter dropdown based on DATE ---
+            const matchesOnDate = allMatches.filter(r => r[0] === dateStr);
+            updateLeagueDropdown(matchesOnDate);
+            
+            applyFilters();
+        }
+
+        function changeDate(direction) {
+            const newIndex = currentDateIndex + direction;
+            if (newIndex >= 0 && newIndex < uniqueDates.length) {
+                currentDateIndex = newIndex;
+                updateDateDisplay();
+            }
+        }
+
+        // --- FILTER & RENDER ---
+        function applyFilters() {
+            if (uniqueDates.length === 0) return;
+            const selectedDate = uniqueDates[currentDateIndex];
+            const lVal = document.getElementById('leagueFilter').value;
+            const sortVal = document.getElementById('sortFilter').value;
+
+            let filtered = allMatches.filter(r => 
+                r[0] === selectedDate && 
+                (lVal === 'All' || r[4] === lVal)
+            );
+
+            if (sortVal === 'High') {
+                filtered.sort((a, b) => parseFloat(b[22] || 0) - parseFloat(a[22] || 0));
+            } else if (sortVal === 'Low') {
+                filtered.sort((a, b) => parseFloat(a[22] || 0) - parseFloat(b[22] || 0));
+            }
+
+            renderApp(filtered);
+        }
+
+        function renderApp(rows) {
+            const container = document.getElementById('app-container');
+            if (rows.length === 0) {
+                showEmptyState("No Matches", "No games scheduled for this date/filter.");
+                return;
+            }
+
+            let html = '';
+
+            rows.forEach(row => {
+                const league = row[4];
+                const homeLogo = row[5], home = row[6];
+                const awayLogo = row[7], away = row[8];
+                const ref = row[12], refApps = row[13], refAvg = row[14];
+                const oddsH = row[15] || "-", oddsD = row[16] || "-", oddsA = row[17] || "-";
+                // S = 18 (H2H Avg), T = 19 (H2H Count)
+                const h2hAvg = parseFloat(row[18]||0).toFixed(2);
+                const h2hCount = row[19] || "0";
+
+                const hXc = parseFloat(row[20]||0).toFixed(2);
+                const aXc = parseFloat(row[21]||0).toFixed(2);
+                const totalXc = parseFloat(row[22]||0).toFixed(2);
+
+                const heroColorClass = getHeatmapClass(totalXc);
+                const refColorClass = getHeatmapClass(refAvg);
+                const h2hColorClass = getHeatmapClass(h2hAvg); // Apply heatmap to H2H
+
+                // --- BAR LOGIC (LOWERED THRESHOLD TO 60%) ---
+                const hVal = parseFloat(hXc), aVal = parseFloat(aXc);
+                const total = hVal + aVal;
+                let homePerc = 50, awayPerc = 50;
+
+                if (total > 0) {
+                    homePerc = (hVal / total) * 100;
+                    awayPerc = 100 - homePerc;
+                }
+
+                let homeBarColor = 'var(--text-sub)'; 
+                let awayBarColor = 'var(--text-sub)'; 
+                let homeBarOp = '0.3';
+                let awayBarOp = '0.3';
+
+                // LOWERED THRESHOLD: 60%
+                if (homePerc >= 60) { 
+                    homeBarColor = 'var(--val-hot)';
+                    homeBarOp = '1';
+                } else if (awayPerc >= 60) { 
+                    awayBarColor = 'var(--val-hot)';
+                    awayBarOp = '1';
+                }
+
+                html += `
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="match-header">
+                                <span class="league-tag">${league}</span>
+                            </div>
+
+                            <div class="teams-wrapper">
+                                <div class="team-block">
+                                    <img src="${homeLogo}" class="team-logo" loading="lazy" decoding="async" onerror="this.style.display='none'">
+                                    <div class="team-name">${home}</div>
+                                </div>
+                                <div class="vs-badge">vs</div>
+                                <div class="team-block">
+                                    <img src="${awayLogo}" class="team-logo" loading="lazy" decoding="async" onerror="this.style.display='none'">
+                                    <div class="team-name">${away}</div>
+                                </div>
+                            </div>
+
+                            <div class="odds-row">
+                                <div class="odd-btn"><span class="odd-label">1</span><span class="odd-val">${oddsH}</span></div>
+                                <div class="odd-btn"><span class="odd-label">X</span><span class="odd-val">${oddsD}</span></div>
+                                <div class="odd-btn"><span class="odd-label">2</span><span class="odd-val">${oddsA}</span></div>
+                            </div>
+
+                            <div class="stats-grid">
+                                <div class="stat-box"><div class="stat-label">Home xC</div><div class="stat-value">${hXc}</div></div>
+                                <div class="stat-box stat-hero"><div class="stat-label ${heroColorClass}">Total xC</div><div class="stat-value ${heroColorClass}">${totalXc}</div></div>
+                                <div class="stat-box"><div class="stat-label">Away xC</div><div class="stat-value">${aXc}</div></div>
+
+                                <div class="bar-container">
+                                    <div class="bar-segment" style="width:${homePerc}%; background:${homeBarColor}; opacity:${homeBarOp};"></div>
+                                    <div class="bar-segment" style="width:${awayPerc}%; background:${awayBarColor}; opacity:${awayBarOp};"></div>
+                                </div>
+                            </div>
+
+                            <div class="h2h-row">
+                                <span>⚔️ Head-to-Head</span>
+                                <span>
+                                    <span class="${h2hColorClass} h2h-value">${h2hAvg}</span> 
+                                    avg <span style="opacity:0.6;">(${h2hCount} gms)</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="card-footer">
+                            <span class="ref-name">👮 ${ref} <span style="font-weight:400; opacity:0.7;">(${refApps})</span></span>
+                            <span class="${refColorClass}">Avg: <b>${refAvg}</b></span>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // --- UTILS ---
+        function resetFilters() {
+            currentDateIndex = 0; updateDateDisplay();
+            document.getElementById('leagueFilter').value = 'All';
+            document.getElementById('sortFilter').value = 'Time';
+            applyFilters();
+        }
+        function updateLeagueDropdown(rows) {
+            const lSelect = document.getElementById('leagueFilter');
+            const currentVal = lSelect.value;
+            const leagues = Array.from(new Set(rows.map(r=>r[4]).filter(Boolean))).sort();
+            lSelect.innerHTML = '<option value="All">All Leagues</option>';
+            leagues.forEach(l => lSelect.appendChild(new Option(l, l)));
+            if (leagues.includes(currentVal)) lSelect.value = currentVal;
+        }
+        function getHeatmapClass(value) {
+            const num = parseFloat(value);
+            if (num >= 4.5) return 'color-hot';    
+            if (num >= 4.0) return 'color-warm';   
+            return 'color-neutral';                
+        }
+        function parseCSV(str) {
+            const arr = []; let quote = false; let col = 0, row = 0;
+            for (let i = 0; i < str.length; i++) {
+                let c = str[i], n = str[i+1];
+                arr[row] = arr[row] || []; arr[row][col] = arr[row][col] || '';
+                if (c == '"' && quote && n == '"') { arr[row][col] += c; ++i; continue; }
+                if (c == '"') { quote = !quote; continue; }
+                if (c == ',' && !quote) { ++col; continue; }
+                if (c == '\r' && n == '\n' && !quote) { ++row; col = 0; ++i; continue; }
+                if (c == '\n' && !quote) { ++row; col = 0; continue; }
+                arr[row][col] += c;
+            }
+            return arr;
+        }
+
+        init();
+    </script>
+</body>
+</html>
