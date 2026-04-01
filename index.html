@@ -47,9 +47,6 @@
   --radius-sm: 8px;
   --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
-  --conf-high-bg: rgba(0, 200, 83, 0.1);
-  --conf-med-bg: rgba(245, 166, 35, 0.1);
-  --conf-low-bg: rgba(136, 153, 166, 0.1);
  }
  [data-theme="dark"] {
   --bg-body: #0a0e14;
@@ -76,9 +73,6 @@
   --odd-text: #e7edf3;
   --shadow-card: 0 1px 3px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.15);
   --shadow-card-hover: 0 2px 8px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.2);
-  --conf-high-bg: rgba(0, 230, 118, 0.12);
-  --conf-med-bg: rgba(255, 171, 64, 0.12);
-  --conf-low-bg: rgba(83, 100, 113, 0.15);
  }
  /* ═══════════════════════════════════════════════════
     RESET & BASE
@@ -175,29 +169,17 @@
   transition: border-color 0.2s;
  }
  .filter-select:focus { outline: none; border-color: var(--accent); }
- .filter-badge {
-  position: absolute; top: -4px; right: -4px;
-  background: var(--accent); color: #fff; font-size: 9px; font-weight: 800;
-  min-width: 16px; height: 16px; border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  padding: 0 4px;
- }
  /* ═══════════════════════════════════════════════════
     CONTENT SPACER
     ═══════════════════════════════════════════════════ */
  .content-area {
-  padding: 0 12px; margin-top: 178px;
+  padding: 0 12px; margin-top: 158px;
  }
  /* MATCH COUNT */
  .match-count-bar {
   display: flex; justify-content: space-between; align-items: center;
   padding: 10px 4px 6px; font-size: 11px; color: var(--text-muted);
   font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase;
- }
- .high-conf-badge {
-  background: var(--conf-high-bg); color: var(--val-hot);
-  font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px;
-  display: flex; align-items: center; gap: 4px;
  }
  /* ═══════════════════════════════════════════════════
     MATCH CARD
@@ -211,7 +193,7 @@
   overflow: hidden;
   transition: box-shadow 0.3s, transform 0.2s;
   content-visibility: auto;
-  contain-intrinsic-size: 0 380px;
+  contain-intrinsic-size: 0 340px;
  }
  .card-body { padding: 18px 18px 14px; }
  /* Match Header */
@@ -318,7 +300,7 @@
   display: flex; justify-content: space-between;
   font-size: 9px; font-weight: 600; color: var(--text-muted);
  }
- /* H2H & Confidence */
+ /* H2H */
  .meta-row {
   margin-top: 12px; padding-top: 12px;
   border-top: 1px dashed var(--border-light);
@@ -329,49 +311,6 @@
  .meta-label svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
  .meta-value { font-family: var(--font-mono); font-weight: 700; font-size: 12px; }
  .meta-games { font-weight: 400; opacity: 0.6; font-family: var(--font-body); }
- /* Confidence badge */
- .conf-pill {
-  display: inline-flex; align-items: center; gap: 5px;
- }
- .conf-score { font-family: var(--font-mono); font-weight: 700; font-size: 13px; }
- .conf-badge {
-  font-size: 8px; font-weight: 800; padding: 3px 7px; border-radius: 5px;
-  text-transform: uppercase; letter-spacing: 0.4px;
- }
- .conf-high { background: var(--conf-high-bg); color: var(--val-hot); }
- .conf-med { background: var(--conf-med-bg); color: var(--val-warm); }
- .conf-low { background: var(--conf-low-bg); color: var(--val-cold); }
- /* Expandable Detail Panel */
- .card-detail {
-  max-height: 0; overflow: hidden;
-  transition: max-height 0.35s ease;
-  background: var(--bg-body);
-  border-top: 1px solid var(--border-light);
- }
- .card-detail.open { max-height: 300px; }
- .detail-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-  padding: 14px 18px;
- }
- .detail-item {
-  display: flex; flex-direction: column; gap: 2px;
- }
- .detail-label { font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
- .detail-value { font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
- .expand-trigger {
-  display: flex; align-items: center; justify-content: center;
-  padding: 8px; cursor: pointer; color: var(--text-muted);
-  font-size: 10px; font-weight: 700; gap: 4px;
-  transition: color 0.2s; text-transform: uppercase; letter-spacing: 0.5px;
-  border-top: 1px solid var(--border-light);
-  background: var(--bg-card);
- }
- .expand-trigger:active { color: var(--accent); }
- .expand-trigger svg {
-  width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2;
-  transition: transform 0.3s;
- }
- .expand-trigger.open svg { transform: rotate(180deg); }
  /* Card Footer */
  .card-footer {
   background-color: var(--bg-footer);
@@ -433,7 +372,6 @@
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
  }
- /* Stagger */
  .card:nth-child(1) { animation-delay: 0s; }
  .card:nth-child(2) { animation-delay: 0.04s; }
  .card:nth-child(3) { animation-delay: 0.08s; }
@@ -491,28 +429,21 @@
    <select class="filter-select" id="leagueFilter" onchange="applyFilters()">
     <option value="All">All Leagues</option>
    </select>
-   <select class="filter-select" id="confFilter" onchange="applyFilters()">
-    <option value="All">All Conf</option>
-    <option value="High">High (&gt;90)</option>
-    <option value="Med">Med (75-90)</option>
-    <option value="Low">Low (&lt;75)</option>
-   </select>
    <select class="filter-select" id="sortFilter" onchange="applyFilters()">
     <option value="Time">Sort: Time</option>
     <option value="High">Sort: High xC</option>
-    <option value="Confidence">Sort: Conf</option>
     <option value="H2H">Sort: H2H Avg</option>
    </select>
   </div>
  </div>
-
+ 
  <!-- ═══════ CONTENT ═══════ -->
  <div class="content-area">
   <div class="match-count-bar" id="matchCountBar"></div>
   <div id="app-container"></div>
   <div class="global-footer" id="globalFooter"></div>
  </div>
-
+ 
  <script>
  // ═══════════════════════════════════════════════════
  // GLOBAL STATE
@@ -525,7 +456,7 @@
  let lastFetchTime = null;
  let autoRefreshTimer = null;
  const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTp_OY8KN8aMK1K24FLjz6toJt9mMFsB129jqeUznt-48NJmcMsS2WLNkrcfyyAyu1lqYup6fJkK1Rp/pub?gid=315027471&single=true&output=csv';
-
+ 
  // ═══════════════════════════════════════════════════
  // THEME
  // ═══════════════════════════════════════════════════
@@ -552,7 +483,7 @@
    document.documentElement.setAttribute('data-theme', 'dark');
   }
  })();
-
+ 
  // ═══════════════════════════════════════════════════
  // FAVORITES
  // ═══════════════════════════════════════════════════
@@ -570,7 +501,7 @@
  function getMatchKey(row) {
   return `${row[0]}_${row[6]}_${row[8]}`;
  }
-
+ 
  // ═══════════════════════════════════════════════════
  // DATA INIT
  // ═══════════════════════════════════════════════════
@@ -619,7 +550,7 @@
    el.textContent = `Last synced: ${lastFetchTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} \u2022 Auto-refresh every 5 min`;
   }
  }
-
+ 
  // ═══════════════════════════════════════════════════
  // DATA PROCESSING
  // ═══════════════════════════════════════════════════
@@ -648,7 +579,7 @@
  function formatDateISO(d) {
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
  }
-
+ 
  // ═══════════════════════════════════════════════════
  // DATE NAVIGATION
  // ═══════════════════════════════════════════════════
@@ -705,7 +636,7 @@
   const date = new Date(unix * 1000);
   return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
  }
-
+ 
  // ═══════════════════════════════════════════════════
  // FILTER & SORT
  // ═══════════════════════════════════════════════════
@@ -713,39 +644,28 @@
   if (!uniqueDates.length) return;
   const selectedDate = uniqueDates[currentDateIndex];
   const lVal = document.getElementById('leagueFilter').value;
-  const cVal = document.getElementById('confFilter').value;
   const sortVal = document.getElementById('sortFilter').value;
   let filtered = allMatches.filter(r => {
    if (r[0] !== selectedDate) return false;
    if (lVal !== 'All' && r[4] !== lVal) return false;
-   const confScore = parseFloat(r[23] || 0);
-   if (cVal === 'High' && confScore < 90) return false;
-   if (cVal === 'Med' && (confScore < 75 || confScore >= 90)) return false;
-   if (cVal === 'Low' && confScore >= 75) return false;
    if (showFavsOnly && !favorites[getMatchKey(r)]) return false;
    return true;
   });
   // Sort
   if (sortVal === 'High') {
    filtered.sort((a, b) => parseFloat(b[22] || 0) - parseFloat(a[22] || 0));
-  } else if (sortVal === 'Confidence') {
-   filtered.sort((a, b) => parseFloat(b[23] || 0) - parseFloat(a[23] || 0));
   } else if (sortVal === 'H2H') {
    filtered.sort((a, b) => parseFloat(b[18] || 0) - parseFloat(a[18] || 0));
   } else {
-   filtered.sort((a, b) => (parseInt(a[45]) || 0) - (parseInt(b[45]) || 0));
+   // Sort by kickoff time (now index 23)
+   filtered.sort((a, b) => (parseInt(a[23]) || 0) - (parseInt(b[23]) || 0));
   }
   // Count bar
-  const allOnDate = allMatches.filter(r => r[0] === selectedDate);
-  const highConfCount = allOnDate.filter(r => parseFloat(r[23] || 0) >= 90).length;
   const countBar = document.getElementById('matchCountBar');
-  countBar.innerHTML = `
-   <span>${filtered.length} match${filtered.length !== 1 ? 'es' : ''}</span>
-   ${highConfCount > 0 ? `<span class="high-conf-badge">\uD83C\uDFAF ${highConfCount} high conf</span>` : ''}
-  `;
+  countBar.innerHTML = `<span>${filtered.length} match${filtered.length !== 1 ? 'es' : ''}</span>`;
   renderApp(filtered);
  }
-
+ 
  // ═══════════════════════════════════════════════════
  // RENDER
  // ═══════════════════════════════════════════════════
@@ -769,17 +689,14 @@
    const hXc = parseFloat(row[20] || 0).toFixed(2);
    const aXc = parseFloat(row[21] || 0).toFixed(2);
    const totalXc = parseFloat(row[22] || 0).toFixed(2);
-   const confidence = parseFloat(row[23] || 0);
-   const kickoffTime = formatUnixTime(row[45]);
+   // Kickoff time now at index 23
+   const kickoffTime = formatUnixTime(row[23]);
    const matchKey = getMatchKey(row);
    const isFav = favorites[matchKey];
    // Color classes
    const heroClass = getHeatClass(totalXc);
    const refClass = getHeatClass(refAvg);
    const h2hClass = getHeatClass(h2hAvg);
-   let confClass = 'conf-low', confLabel = 'Low';
-   if (confidence >= 90) { confClass = 'conf-high'; confLabel = 'High'; }
-   else if (confidence >= 75) { confClass = 'conf-med'; confLabel = 'Med'; }
    // Bar percentages
    const hVal = parseFloat(hXc), aVal = parseFloat(aXc);
    const total = hVal + aVal;
@@ -789,11 +706,6 @@
    let hOp = '0.35', aOp = '0.35';
    if (homePerc >= 58) { hBarC = 'var(--val-hot)'; hOp = '1'; }
    else if (awayPerc >= 58) { aBarC = 'var(--val-hot)'; aOp = '1'; }
-   // Extra data for expansion
-   const homeForm = row[9] || '\u2014';
-   const awayForm = row[10] || '\u2014';
-   const homePos = row[24] || '\u2014';
-   const awayPos = row[25] || '\u2014';
    const cardEl = document.createElement('div');
    cardEl.className = 'card';
    cardEl.style.animationDelay = `${Math.min(idx, 7) * 0.04}s`;
@@ -866,28 +778,6 @@
        <span class="meta-games"> avg (${h2hCount} gms)</span>
       </span>
      </div>
-     <div class="meta-row">
-      <span class="meta-label">
-       <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-       Confidence
-      </span>
-      <span class="conf-pill">
-       <span class="conf-score">${confidence}%</span>
-       <span class="conf-badge ${confClass}">${confLabel}</span>
-      </span>
-     </div>
-    </div>
-    <div class="expand-trigger" onclick="toggleDetail(this)">
-     More
-     <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-    </div>
-    <div class="card-detail" id="detail-${idx}">
-     <div class="detail-grid">
-      <div class="detail-item"><div class="detail-label">Home Form</div><div class="detail-value">${homeForm}</div></div>
-      <div class="detail-item"><div class="detail-label">Away Form</div><div class="detail-value">${awayForm}</div></div>
-      <div class="detail-item"><div class="detail-label">Home Pos</div><div class="detail-value">${homePos}</div></div>
-      <div class="detail-item"><div class="detail-label">Away Pos</div><div class="detail-value">${awayPos}</div></div>
-     </div>
     </div>
     <div class="card-footer">
      <span class="ref-info">
@@ -903,12 +793,6 @@
   container.innerHTML = '';
   container.appendChild(fragment);
  }
- function toggleDetail(trigger) {
-  const detail = trigger.nextElementSibling;
-  detail.classList.toggle('open');
-  trigger.classList.toggle('open');
-  trigger.firstChild.textContent = detail.classList.contains('open') ? 'Less' : 'More';
- }
  function showEmptyState(title, subtitle) {
   document.getElementById('app-container').innerHTML = `
    <div class="empty-state">
@@ -918,13 +802,12 @@
    </div>
   `;
  }
-
+ 
  // ═══════════════════════════════════════════════════
  // UTILS
  // ═══════════════════════════════════════════════════
  function resetFilters() {
   document.getElementById('leagueFilter').value = 'All';
-  document.getElementById('confFilter').value = 'All';
   document.getElementById('sortFilter').value = 'Time';
   showFavsOnly = false;
   document.getElementById('favToggle').classList.remove('active');
@@ -958,7 +841,7 @@
   }
   return arr;
  }
-
+ 
  // ═══════════════════════════════════════════════════
  // KEYBOARD NAV
  // ═══════════════════════════════════════════════════
@@ -966,7 +849,7 @@
   if (e.key === 'ArrowLeft') changeDate(-1);
   if (e.key === 'ArrowRight') changeDate(1);
  });
-
+ 
  // ═══════════════════════════════════════════════════
  // INIT
  // ═══════════════════════════════════════════════════
