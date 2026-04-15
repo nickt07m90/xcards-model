@@ -652,7 +652,7 @@
    return true;
   });
   // Sort
-  if (filtered.length > 0) alert(filtered[0].join(' | '));
+  if (filtered.length > 0) alert(filtered[0].slice(30,47).map((v,i) => (i+30)+':'+v).join(' | '));
   if (sortVal === 'High') {
    filtered.sort((a, b) => parseFloat(b[22] || 0) - parseFloat(a[22] || 0));
   } else if (sortVal === 'H2H') {
