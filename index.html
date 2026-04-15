@@ -641,6 +641,7 @@
  // FILTER & SORT
  // ═══════════════════════════════════════════════════
  function applyFilters() {
+  alert(parseCSV(localStorage.getItem('match_data_v2'))[0].slice(18,30).map((v,i) => (i+18)+':'+v).join(' | '));
   if (!uniqueDates.length) return;
   const selectedDate = uniqueDates[currentDateIndex];
   const lVal = document.getElementById('leagueFilter').value;
