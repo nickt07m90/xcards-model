@@ -692,7 +692,7 @@
    return true;
   });
   // Sort
-  if (filtered.length > 0) alert('len:' + filtered[0].length + ' 44:[' + filtered[0][44] + ']');
+  if (filtered.length > 0) alert('HomeCards col:' + COL['Home Cards'] + ' val:[' + col(filtered[0], 'Home Cards') + ']');
   if (sortVal === 'High') {
    filtered.sort((a, b) => parseFloat(b[46] || 0) - parseFloat(a[46] || 0));
   } else if (sortVal === 'H2H') {
