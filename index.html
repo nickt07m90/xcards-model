@@ -467,7 +467,9 @@
  function buildColumnMap(headerRow) {
   COL = {};
   headerRow.forEach((name, idx) => {
-   COL[name.trim()] = idx;
+   // Normalize: trim whitespace and replace any newlines with a single space
+   const normalized = name.trim().replace(/[\r\n]+/g, ' ');
+   COL[normalized] = idx;
   });
   console.log('Column map built:', COL);
  }
@@ -585,7 +587,6 @@
  
   // Build column map from header row
   buildColumnMap(rows[0]);
-  alert('Headers found: ' + rows[0].slice(0,10).join(' | '));
  
   // Find the home team column index for filtering valid rows
   const homeIdx = COL['Home Team'];
@@ -903,3 +904,4 @@
  </script>
 </body>
 </html>
+ 
