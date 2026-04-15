@@ -585,6 +585,7 @@
  
   // Build column map from header row
   buildColumnMap(rows[0]);
+  alert('Headers found: ' + rows[0].slice(0,10).join(' | '));
  
   // Find the home team column index for filtering valid rows
   const homeIdx = COL['Home Team'];
