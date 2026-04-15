@@ -652,7 +652,7 @@
    return true;
   });
   // Sort
-  if (filtered.length > 0) alert('Total columns: ' + filtered[0].length);
+  if (filtered.length > 0) alert(filtered[0].slice(15,30).map((v,i) => (i+15)+':'+v).join(' | '));
   if (sortVal === 'High') {
    filtered.sort((a, b) => parseFloat(b[22] || 0) - parseFloat(a[22] || 0));
   } else if (sortVal === 'H2H') {
