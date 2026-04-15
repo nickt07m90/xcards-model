@@ -693,7 +693,7 @@
   });
   // Sort
   if (sortVal === 'High') {
-   filtered.sort((a, b) => parseFloat(col(b, 'Total Cards') || 0) - parseFloat(col(a, 'Total Cards') || 0));
+   filtered.sort((a, b) => parseFloat(b[46] || 0) - parseFloat(a[46] || 0));
   } else if (sortVal === 'H2H') {
    filtered.sort((a, b) => parseFloat(col(b, 'H2H Average') || 0) - parseFloat(col(a, 'H2H Average') || 0));
   } else {
@@ -733,9 +733,9 @@
    const oddsA = col(row, '2') || '-';
    const h2hAvg = parseFloat(col(row, 'H2H Average') || 0).toFixed(2);
    const h2hCount = col(row, 'H2H Games') || '0';
-   const hXc = parseFloat(col(row, 'Home Cards') || 0).toFixed(2);
-   const aXc = parseFloat(col(row, 'Away Cards') || 0).toFixed(2);
-   const totalXc = parseFloat(col(row, 'Total Cards') || 0).toFixed(2);
+   const hXc = parseFloat(row[44] || 0).toFixed(2);
+   const aXc = parseFloat(row[45] || 0).toFixed(2);
+   const totalXc = parseFloat(row[46] || 0).toFixed(2);
    const kickoffTime = formatUnixTime(col(row, 'Kickoff'));
    const matchKey = getMatchKey(row);
    const isFav = favorites[matchKey];
@@ -904,4 +904,3 @@
  </script>
 </body>
 </html>
- 
