@@ -458,28 +458,32 @@
  const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTp_OY8KN8aMK1K24FLjz6toJt9mMFsB129jqeUznt-48NJmcMsS2WLNkrcfyyAyu1lqYup6fJkK1Rp/pub?gid=315027471&single=true&output=csv';
  
  // ═══════════════════════════════════════════════════
- // COLUMN MAP - built dynamically from header row
- // Maps header names to their index so column order
- // in the spreadsheet doesn't matter
+ // FIXED COLUMN MAP (based on your screenshot)
+ // Column letters converted to zero-based indices:
+ // A=0, B=1, C=2, D=3, E=4, F=5, G=6, H=7, I=8, J=9
+ // K=10, L=11, M=12, N=13, O=14, P=15, Q=16, R=17
+ // S=18, T=19, U=20, V=21, W=22, X=23
  // ═══════════════════════════════════════════════════
- let COL = {};
- 
- function buildColumnMap(headerRow) {
-  COL = {};
-  headerRow.forEach((name, idx) => {
-   // Normalize: trim whitespace and replace any newlines with a single space
-   const normalized = name.trim().replace(/[\r\n]+/g, ' ');
-   COL[normalized] = idx;
-  });
-  console.log('Column map built:', COL);
- }
- 
- // Helper to safely get a column value by header name
- function col(row, name) {
-  const idx = COL[name];
-  if (idx === undefined) return '';
-  return row[idx] || '';
- }
+ const C = {
+  date: 0,          // A
+  league: 4,        // E
+  homeLogo: 5,      // F
+  homeTeam: 6,      // G
+  awayLogo: 7,      // H
+  awayTeam: 8,      // I
+  referee: 12,      // M (Referee 2 in header)
+  refGames: 13,     // N
+  refTotal: 14,     // O
+  odds1: 15,        // P
+  oddsX: 16,        // Q
+  odds2: 17,        // R
+  h2hAvg: 18,       // S
+  h2hGames: 19,     // T
+  homeCards: 20,    // U
+  awayCards: 21,    // V
+  totalCards: 22,   // W
+  kickoff: 23       // X
+ };
  
  // ═══════════════════════════════════════════════════
  // THEME
@@ -523,14 +527,13 @@
   applyFilters();
  }
  function getMatchKey(row) {
-  return col(row, 'Date') + '_' + col(row, 'Home Team') + '_' + col(row, 'Away Team');
+  return (row[C.date] || '') + '_' + (row[C.homeTeam] || '') + '_' + (row[C.awayTeam] || '');
  }
  
  // ═══════════════════════════════════════════════════
  // DATA INIT
  // ═══════════════════════════════════════════════════
  async function init() {
-  const dot = document.getElementById('statusDot');
   const cachedData = localStorage.getItem('match_data_v3');
   if (cachedData) {
    processData(cachedData);
@@ -584,23 +587,13 @@
    showEmptyState('No Data', 'The spreadsheet appears empty');
    return;
   }
- 
-  // Build column map from header row
-  buildColumnMap(rows[0]);
- 
-  // Find the home team column index for filtering valid rows
-  const homeIdx = COL['Home Team'];
-  if (homeIdx === undefined) {
-   showEmptyState('Header Error', 'Could not find "Home Team" column in spreadsheet');
-   return;
-  }
- 
-  allMatches = rows.slice(1).filter(r => r.length > homeIdx && r[homeIdx]);
- 
-  const dateIdx = COL['Date'];
-  const dateSet = new Set(allMatches.map(r => r[dateIdx]).filter(Boolean));
+  
+  // Skip header row and filter to rows with a home team
+  allMatches = rows.slice(1).filter(r => r.length > C.homeTeam && r[C.homeTeam]);
+  
+  const dateSet = new Set(allMatches.map(r => r[C.date]).filter(Boolean));
   uniqueDates = Array.from(dateSet).sort();
- 
+  
   if (uniqueDates.length > 0) {
    const today = new Date();
    let bestIndex = 0;
@@ -648,7 +641,7 @@
   }
   document.getElementById('btnPrev').className = currentDateIndex === 0 ? 'nav-arrow disabled' : 'nav-arrow';
   document.getElementById('btnNext').className = currentDateIndex === uniqueDates.length - 1 ? 'nav-arrow disabled' : 'nav-arrow';
-  const matchesOnDate = allMatches.filter(r => col(r, 'Date') === dateStr);
+  const matchesOnDate = allMatches.filter(r => r[C.date] === dateStr);
   updateLeagueDropdown(matchesOnDate);
   applyFilters();
  }
@@ -686,19 +679,18 @@
   const lVal = document.getElementById('leagueFilter').value;
   const sortVal = document.getElementById('sortFilter').value;
   let filtered = allMatches.filter(r => {
-   if (col(r, 'Date') !== selectedDate) return false;
-   if (lVal !== 'All' && col(r, 'League') !== lVal) return false;
+   if (r[C.date] !== selectedDate) return false;
+   if (lVal !== 'All' && r[C.league] !== lVal) return false;
    if (showFavsOnly && !favorites[getMatchKey(r)]) return false;
    return true;
   });
   // Sort
-  if (filtered.length > 0) alert('HomeCards col:' + COL['Home Cards'] + ' val:[' + col(filtered[0], 'Home Cards') + ']');
   if (sortVal === 'High') {
-   filtered.sort((a, b) => parseFloat(b[46] || 0) - parseFloat(a[46] || 0));
+   filtered.sort((a, b) => parseFloat(b[C.totalCards] || 0) - parseFloat(a[C.totalCards] || 0));
   } else if (sortVal === 'H2H') {
-   filtered.sort((a, b) => parseFloat(col(b, 'H2H Average') || 0) - parseFloat(col(a, 'H2H Average') || 0));
+   filtered.sort((a, b) => parseFloat(b[C.h2hAvg] || 0) - parseFloat(a[C.h2hAvg] || 0));
   } else {
-   filtered.sort((a, b) => (parseInt(col(a, 'Kickoff')) || 0) - (parseInt(col(b, 'Kickoff')) || 0));
+   filtered.sort((a, b) => (parseInt(a[C.kickoff]) || 0) - (parseInt(b[C.kickoff]) || 0));
   }
   // Count bar
   const countBar = document.getElementById('matchCountBar');
@@ -721,23 +713,23 @@
   }
   const fragment = document.createDocumentFragment();
   rows.forEach((row, idx) => {
-   const league = col(row, 'League');
-   const homeLogo = col(row, 'Home Logo');
-   const home = col(row, 'Home Team');
-   const awayLogo = col(row, 'Away Logo');
-   const away = col(row, 'Away Team');
-   const ref = col(row, 'Referee 2');
-   const refApps = col(row, 'Referee Games');
-   const refAvg = col(row, 'Referee Total');
-   const oddsH = col(row, '1') || '-';
-   const oddsD = col(row, 'X') || '-';
-   const oddsA = col(row, '2') || '-';
-   const h2hAvg = parseFloat(col(row, 'H2H Average') || 0).toFixed(2);
-   const h2hCount = col(row, 'H2H Games') || '0';
-   const hXc = parseFloat(row[44] || 0).toFixed(2);
-   const aXc = parseFloat(row[45] || 0).toFixed(2);
-   const totalXc = parseFloat(row[46] || 0).toFixed(2);
-   const kickoffTime = formatUnixTime(col(row, 'Kickoff'));
+   const league = row[C.league] || '';
+   const homeLogo = row[C.homeLogo] || '';
+   const home = row[C.homeTeam] || '';
+   const awayLogo = row[C.awayLogo] || '';
+   const away = row[C.awayTeam] || '';
+   const ref = row[C.referee] || 'TBC';
+   const refApps = row[C.refGames] || '0';
+   const refAvg = parseFloat(row[C.refTotal] || 0).toFixed(2);
+   const oddsH = row[C.odds1] || '-';
+   const oddsD = row[C.oddsX] || '-';
+   const oddsA = row[C.odds2] || '-';
+   const h2hAvg = parseFloat(row[C.h2hAvg] || 0).toFixed(2);
+   const h2hCount = row[C.h2hGames] || '0';
+   const hXc = parseFloat(row[C.homeCards] || 0).toFixed(2);
+   const aXc = parseFloat(row[C.awayCards] || 0).toFixed(2);
+   const totalXc = parseFloat(row[C.totalCards] || 0).toFixed(2);
+   const kickoffTime = formatUnixTime(row[C.kickoff]);
    const matchKey = getMatchKey(row);
    const isFav = favorites[matchKey];
    // Color classes
@@ -762,7 +754,7 @@
       <span class="league-tag">${league}</span>
       <div style="display:flex;align-items:center;gap:6px;">
        <span class="kickoff-tag">${kickoffTime}</span>
-       <button class="fav-btn ${isFav ? 'active' : ''}" onclick="event.stopPropagation(); toggleFav('${matchKey}')">
+       <button class="fav-btn ${isFav ? 'active' : ''}" onclick="event.stopPropagation(); toggleFav('${matchKey.replace(/'/g, "\\'")}')">
         <svg viewBox="0 0 24 24" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
         </svg>
@@ -863,7 +855,7 @@
  function updateLeagueDropdown(rows) {
   const sel = document.getElementById('leagueFilter');
   const currentVal = sel.value;
-  const leagues = Array.from(new Set(rows.map(r => col(r, 'League')).filter(Boolean))).sort();
+  const leagues = Array.from(new Set(rows.map(r => r[C.league]).filter(Boolean))).sort();
   sel.innerHTML = '<option value="All">All Leagues</option>';
   leagues.forEach(l => sel.appendChild(new Option(l, l)));
   if (leagues.includes(currentVal)) sel.value = currentVal;
