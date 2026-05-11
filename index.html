@@ -285,6 +285,20 @@
   font-family: var(--font-mono); font-size: 36px; font-weight: 800;
   letter-spacing: -2px; line-height: 1;
  }
+ /* Dispersion pill */
+ .disp-pill {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  margin-top: 5px;
+  letter-spacing: -0.2px;
+  background: var(--border-light);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+ }
  /* xC Bar */
  .xc-bar-wrap {
   display: flex; height: 6px; border-radius: 3px;
@@ -458,11 +472,10 @@
  const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTp_OY8KN8aMK1K24FLjz6toJt9mMFsB129jqeUznt-48NJmcMsS2WLNkrcfyyAyu1lqYup6fJkK1Rp/pub?gid=315027471&single=true&output=csv';
  
  // ═══════════════════════════════════════════════════
- // FIXED COLUMN MAP (based on your screenshot)
- // Column letters converted to zero-based indices:
+ // FIXED COLUMN MAP
  // A=0, B=1, C=2, D=3, E=4, F=5, G=6, H=7, I=8, J=9
  // K=10, L=11, M=12, N=13, O=14, P=15, Q=16, R=17
- // S=18, T=19, U=20, V=21, W=22, X=23
+ // S=18, T=19, U=20, V=21, W=22, X=23, Y=24
  // ═══════════════════════════════════════════════════
  const C = {
   date: 0,          // A
@@ -479,10 +492,11 @@
   odds2: 17,        // R
   h2hAvg: 18,       // S
   h2hGames: 19,     // T
-  homeCards: 20,    // U
-  awayCards: 21,    // V
-  totalCards: 22,   // W
-  kickoff: 23       // X
+  homeCards: 20,     // U
+  awayCards: 21,     // V
+  totalCards: 22,    // W
+  kickoff: 23,       // X
+  dispersion: 24     // Y
  };
  
  // ═══════════════════════════════════════════════════
@@ -587,13 +601,9 @@
    showEmptyState('No Data', 'The spreadsheet appears empty');
    return;
   }
-  
-  // Skip header row and filter to rows with a home team
   allMatches = rows.slice(1).filter(r => r.length > C.homeTeam && r[C.homeTeam]);
-  
   const dateSet = new Set(allMatches.map(r => r[C.date]).filter(Boolean));
   uniqueDates = Array.from(dateSet).sort();
-  
   if (uniqueDates.length > 0) {
    const today = new Date();
    let bestIndex = 0;
@@ -684,7 +694,6 @@
    if (showFavsOnly && !favorites[getMatchKey(r)]) return false;
    return true;
   });
-  // Sort
   if (sortVal === 'High') {
    filtered.sort((a, b) => parseFloat(b[C.totalCards] || 0) - parseFloat(a[C.totalCards] || 0));
   } else if (sortVal === 'H2H') {
@@ -692,7 +701,6 @@
   } else {
    filtered.sort((a, b) => (parseInt(a[C.kickoff]) || 0) - (parseInt(b[C.kickoff]) || 0));
   }
-  // Count bar
   const countBar = document.getElementById('matchCountBar');
   countBar.innerHTML = `<span>${filtered.length} match${filtered.length !== 1 ? 'es' : ''}</span>`;
   renderApp(filtered);
@@ -730,6 +738,8 @@
    const aXc = parseFloat(row[C.awayCards] || 0).toFixed(2);
    const totalXc = parseFloat(row[C.totalCards] || 0).toFixed(2);
    const kickoffTime = formatUnixTime(row[C.kickoff]);
+   const disp = parseFloat(row[C.dispersion] || 0);
+   const dispDisplay = disp > 0 ? disp.toFixed(2) : '--';
    const matchKey = getMatchKey(row);
    const isFav = favorites[matchKey];
    // Color classes
@@ -792,6 +802,7 @@
        <div class="xc-hero">
         <div class="xc-label ${heroClass}">Total xC</div>
         <div class="xc-hero-value ${heroClass}">${totalXc}</div>
+        <div class="disp-pill" title="Dispersion (variance/mean)">σ ${dispDisplay}</div>
        </div>
        <div class="xc-side">
         <div class="xc-label">Away xC</div>
