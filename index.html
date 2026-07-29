@@ -325,6 +325,28 @@
  .meta-label svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
  .meta-value { font-family: var(--font-mono); font-weight: 700; font-size: 12px; }
  .meta-games { font-weight: 400; opacity: 0.6; font-family: var(--font-body); }
+ /* ═══════════════════════════════════════════════════
+    MODEL FLAGS (v15.2)
+    ═══════════════════════════════════════════════════ */
+ .flags-row {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px dashed var(--border-light);
+ }
+ .flag-pill {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.4px;
+  text-transform: uppercase; padding: 3px 8px; border-radius: 20px;
+  display: inline-flex; align-items: center; gap: 4px;
+  line-height: 1.4;
+ }
+ .flag-caution {
+  background: var(--val-warm-bg); color: var(--val-warm);
+  border: 1px solid rgba(245, 166, 35, 0.3);
+ }
+ .flag-warn {
+  background: rgba(255, 56, 96, 0.08); color: var(--ref-strict);
+  border: 1px solid rgba(255, 56, 96, 0.3);
+ }
  /* Card Footer */
  .card-footer {
   background-color: var(--bg-footer);
@@ -475,7 +497,7 @@
  // FIXED COLUMN MAP
  // A=0, B=1, C=2, D=3, E=4, F=5, G=6, H=7, I=8, J=9
  // K=10, L=11, M=12, N=13, O=14, P=15, Q=16, R=17
- // S=18, T=19, U=20, V=21, W=22, X=23, Y=24
+ // S=18, T=19, U=20, V=21, W=22, X=23, Y=24, Z=25
  // ═══════════════════════════════════════════════════
  const C = {
   date: 0,          // A
@@ -496,8 +518,47 @@
   awayCards: 21,     // V
   totalCards: 22,    // W
   kickoff: 23,       // X
-  dispersion: 24     // Y
+  dispersion: 24,    // Y
+  flags: 25          // Z (v15.2 model flags)
  };
+ 
+ // ═══════════════════════════════════════════════════
+ // MODEL FLAGS (v15.2)
+ // warn:true = red (data problem — treat prediction with suspicion)
+ // warn:false = amber (prediction leans on defaults — provisional)
+ // ═══════════════════════════════════════════════════
+ const FLAG_META = {
+  'NO_REF':         { label: 'Ref TBC',        warn: false },
+  'REF_UNKNOWN':    { label: 'Ref no history', warn: false },
+  'REF_THIN':       { label: 'Ref thin',       warn: false },
+  'ODDS_MISSING':   { label: 'No odds',        warn: false },
+  'H_FORM_THIN':    { label: 'H form thin',    warn: false },
+  'A_FORM_THIN':    { label: 'A form thin',    warn: false },
+  'H_6M_NONE':      { label: 'H no 6m data',   warn: false },
+  'A_6M_NONE':      { label: 'A no 6m data',   warn: false },
+  'H_FOULS_NA':     { label: 'H fouls n/a',    warn: false },
+  'A_FOULS_NA':     { label: 'A fouls n/a',    warn: false },
+  'H_TEAM_THIN':    { label: 'H sample thin',  warn: false },
+  'A_TEAM_THIN':    { label: 'A sample thin',  warn: false },
+  'H_FORM_NONE':    { label: 'H no form data', warn: true },
+  'A_FORM_NONE':    { label: 'A no form data', warn: true },
+  'LEAGUE_THIN':    { label: 'League thin',    warn: true },
+  'POOL_THIN':      { label: 'Pool thin',      warn: true },
+  'CHECK_INTL_ID':  { label: 'Check intl ID',  warn: true },
+  'NO_LEAGUE_DATA': { label: 'No league data', warn: true },
+  'BAD_DATE':       { label: 'Bad date',       warn: true },
+  'MISSING_IDS':    { label: 'Missing IDs',    warn: true }
+ };
+ function renderFlags(flagStr) {
+  if (!flagStr) return '';
+  const codes = String(flagStr).split(',').map(s => s.trim()).filter(Boolean);
+  if (!codes.length) return '';
+  const pills = codes.map(code => {
+   const meta = FLAG_META[code] || { label: code.replace(/_/g, ' '), warn: false };
+   return `<span class="flag-pill ${meta.warn ? 'flag-warn' : 'flag-caution'}">${meta.label}</span>`;
+  }).join('');
+  return `<div class="flags-row">${pills}</div>`;
+ }
  
  // ═══════════════════════════════════════════════════
  // THEME
@@ -740,6 +801,7 @@
    const kickoffTime = formatUnixTime(row[C.kickoff]);
    const disp = parseFloat(row[C.dispersion] || 0);
    const dispDisplay = disp > 0 ? disp.toFixed(2) : '--';
+   const flagsHTML = renderFlags(row[C.flags]);
    const matchKey = getMatchKey(row);
    const isFav = favorites[matchKey];
    // Color classes
@@ -828,6 +890,7 @@
        <span class="meta-games"> avg (${h2hCount} gms)</span>
       </span>
      </div>
+     ${flagsHTML}
     </div>
     <div class="card-footer">
      <span class="ref-info">
