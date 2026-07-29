@@ -347,6 +347,10 @@
   background: rgba(255, 56, 96, 0.08); color: var(--ref-strict);
   border: 1px solid rgba(255, 56, 96, 0.3);
  }
+ .flag-info {
+  background: var(--accent-glow); color: var(--accent);
+  border: 1px solid rgba(29, 155, 240, 0.3);
+ }
  /* Card Footer */
  .card-footer {
   background-color: var(--bg-footer);
@@ -523,40 +527,56 @@
  };
  
  // ═══════════════════════════════════════════════════
- // MODEL FLAGS (v15.2)
- // warn:true = red (data problem — treat prediction with suspicion)
- // warn:false = amber (prediction leans on defaults — provisional)
+ // MODEL FLAGS (v15.2 data quality + v15.3 insight)
+ // sev 'warn'    = red   (data problem — treat prediction with suspicion)
+ // sev 'caution' = amber (prediction leans on defaults — provisional)
+ // sev 'info'    = blue  (signal context — worth knowing before staking)
  // ═══════════════════════════════════════════════════
  const FLAG_META = {
-  'NO_REF':         { label: 'Ref TBC',        warn: false },
-  'REF_UNKNOWN':    { label: 'Ref no history', warn: false },
-  'REF_THIN':       { label: 'Ref thin',       warn: false },
-  'ODDS_MISSING':   { label: 'No odds',        warn: false },
-  'H_FORM_THIN':    { label: 'H form thin',    warn: false },
-  'A_FORM_THIN':    { label: 'A form thin',    warn: false },
-  'H_6M_NONE':      { label: 'H no 6m data',   warn: false },
-  'A_6M_NONE':      { label: 'A no 6m data',   warn: false },
-  'H_FOULS_NA':     { label: 'H fouls n/a',    warn: false },
-  'A_FOULS_NA':     { label: 'A fouls n/a',    warn: false },
-  'H_TEAM_THIN':    { label: 'H sample thin',  warn: false },
-  'A_TEAM_THIN':    { label: 'A sample thin',  warn: false },
-  'H_FORM_NONE':    { label: 'H no form data', warn: true },
-  'A_FORM_NONE':    { label: 'A no form data', warn: true },
-  'LEAGUE_THIN':    { label: 'League thin',    warn: true },
-  'POOL_THIN':      { label: 'Pool thin',      warn: true },
-  'CHECK_INTL_ID':  { label: 'Check intl ID',  warn: true },
-  'NO_LEAGUE_DATA': { label: 'No league data', warn: true },
-  'BAD_DATE':       { label: 'Bad date',       warn: true },
-  'MISSING_IDS':    { label: 'Missing IDs',    warn: true }
+  'NO_REF':         { label: 'Ref TBC',           sev: 'caution' },
+  'REF_UNKNOWN':    { label: 'Ref no history',    sev: 'caution' },
+  'REF_THIN':       { label: 'Ref thin',          sev: 'caution' },
+  'ODDS_MISSING':   { label: 'No odds',           sev: 'caution' },
+  'H_FORM_THIN':    { label: 'H form thin',       sev: 'caution' },
+  'A_FORM_THIN':    { label: 'A form thin',       sev: 'caution' },
+  'H_6M_NONE':      { label: 'H no 6m data',      sev: 'caution' },
+  'A_6M_NONE':      { label: 'A no 6m data',      sev: 'caution' },
+  'H_FOULS_NA':     { label: 'H fouls n/a',       sev: 'caution' },
+  'A_FOULS_NA':     { label: 'A fouls n/a',       sev: 'caution' },
+  'H_TEAM_THIN':    { label: 'H sample thin',     sev: 'caution' },
+  'A_TEAM_THIN':    { label: 'A sample thin',     sev: 'caution' },
+  'H_FORM_NONE':    { label: 'H no form data',    sev: 'warn' },
+  'A_FORM_NONE':    { label: 'A no form data',    sev: 'warn' },
+  'LEAGUE_THIN':    { label: 'League thin',       sev: 'warn' },
+  'POOL_THIN':      { label: 'Pool thin',         sev: 'warn' },
+  'CHECK_INTL_ID':  { label: 'Check intl ID',     sev: 'warn' },
+  'NO_LEAGUE_DATA': { label: 'No league data',    sev: 'warn' },
+  'BAD_DATE':       { label: 'Bad date',          sev: 'warn' },
+  'MISSING_IDS':    { label: 'Missing IDs',       sev: 'warn' },
+  'H2H_HOT':        { label: 'H2H runs hot',      sev: 'info' },
+  'H2H_COLD':       { label: 'H2H runs cold',     sev: 'info' },
+  'REF_STRICT':     { label: 'Strict ref',        sev: 'info' },
+  'REF_LENIENT':    { label: 'Lenient ref',       sev: 'info' },
+  'PRED_HIGH':      { label: 'Above league avg',  sev: 'info' },
+  'PRED_LOW':       { label: 'Below league avg',  sev: 'info' },
+  'MISMATCH':       { label: 'One-sided game',    sev: 'info' },
+  'DISP_HIGH':      { label: 'Volatile league',   sev: 'info' },
+  'H_SPIKE':        { label: 'H spike game',      sev: 'info' },
+  'A_SPIKE':        { label: 'A spike game',      sev: 'info' },
+  'KNOCKOUT':       { label: 'Knockout stage',    sev: 'info' }
  };
+ const FLAG_CLASS = { warn: 'flag-warn', caution: 'flag-caution', info: 'flag-info' };
  function renderFlags(flagStr) {
   if (!flagStr) return '';
   const codes = String(flagStr).split(',').map(s => s.trim()).filter(Boolean);
   if (!codes.length) return '';
-  const pills = codes.map(code => {
-   const meta = FLAG_META[code] || { label: code.replace(/_/g, ' '), warn: false };
-   return `<span class="flag-pill ${meta.warn ? 'flag-warn' : 'flag-caution'}">${meta.label}</span>`;
-  }).join('');
+  // warn first, then caution, then info — most serious reads first
+  const order = { warn: 0, caution: 1, info: 2 };
+  const metas = codes.map(code => FLAG_META[code] || { label: code.replace(/_/g, ' '), sev: 'caution' });
+  metas.sort((a, b) => (order[a.sev] || 1) - (order[b.sev] || 1));
+  const pills = metas.map(meta =>
+   `<span class="flag-pill ${FLAG_CLASS[meta.sev] || 'flag-caution'}">${meta.label}</span>`
+  ).join('');
   return `<div class="flags-row">${pills}</div>`;
  }
  
