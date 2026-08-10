@@ -351,6 +351,44 @@
   background: var(--accent-glow); color: var(--accent);
   border: 1px solid rgba(29, 155, 240, 0.3);
  }
+ .flag-pill { cursor: pointer; transition: transform 0.15s; }
+ .flag-pill:active { transform: scale(0.94); }
+ .flag-pill.selected { box-shadow: 0 0 0 2px currentColor; }
+ /* Flag explanation bottom sheet */
+ .flag-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+  opacity: 0; pointer-events: none; transition: opacity 0.25s; z-index: 2000;
+ }
+ .flag-backdrop.open { opacity: 1; pointer-events: auto; }
+ .flag-sheet {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  background: var(--bg-card); border: 1px solid var(--border); border-bottom: none;
+  border-radius: 20px 20px 0 0; z-index: 2001;
+  transform: translateY(105%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  max-height: 75vh; overflow-y: auto;
+  padding: 14px 20px calc(26px + env(safe-area-inset-bottom));
+  box-shadow: 0 -8px 32px rgba(0,0,0,0.25);
+ }
+ .flag-sheet.open { transform: translateY(0); }
+ .flag-sheet-handle {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: var(--border); margin: 0 auto 16px;
+ }
+ .flag-sheet-head {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;
+ }
+ .flag-sheet-title { font-size: 17px; font-weight: 800; letter-spacing: -0.3px; }
+ .flag-sheet-body { font-size: 13.5px; line-height: 1.6; color: var(--text-secondary); }
+ .flag-sheet-body p { margin-bottom: 10px; }
+ .flag-action {
+  margin-top: 6px; padding: 12px 14px; border-radius: 12px;
+  background: var(--bg-body); border: 1px solid var(--border-light);
+  font-size: 13px; line-height: 1.55; color: var(--text-main);
+ }
+ .flag-action-label {
+  font-size: 9px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 4px;
+ }
  /* Card Footer */
  .card-footer {
   background-color: var(--bg-footer);
@@ -484,6 +522,13 @@
   <div class="global-footer" id="globalFooter"></div>
  </div>
  
+ <!-- ═══════ FLAG INFO SHEET ═══════ -->
+ <div class="flag-backdrop" id="flagBackdrop" onclick="closeFlagInfo()"></div>
+ <div class="flag-sheet" id="flagSheet">
+  <div class="flag-sheet-handle"></div>
+  <div id="flagSheetContent"></div>
+ </div>
+ 
  <script>
  // ═══════════════════════════════════════════════════
  // GLOBAL STATE
@@ -523,61 +568,158 @@
   totalCards: 22,    // W
   kickoff: 23,       // X
   dispersion: 24,    // Y
-  flags: 25          // Z (v15.2 model flags)
+  flags: 25,         // Z (v15.2 model flags)
+  refMod: 26         // AA (v15.4 referee multiplier)
  };
  
  // ═══════════════════════════════════════════════════
- // MODEL FLAGS (v15.2 data quality + v15.3 insight)
- // sev 'warn'    = red   (data problem — treat prediction with suspicion)
- // sev 'caution' = amber (prediction leans on defaults — provisional)
- // sev 'info'    = blue  (signal context — worth knowing before staking)
+ // MODEL FLAGS — full definitions
+ // sev 'warn'    = red   (data problem)
+ // sev 'caution' = amber (provisional, leaning on defaults)
+ // sev 'info'    = blue  (signal context)
+ // Tap any pill to open the explanation sheet.
  // ═══════════════════════════════════════════════════
  const FLAG_META = {
-  'NO_REF':         { label: 'Ref TBC',           sev: 'caution' },
-  'REF_UNKNOWN':    { label: 'Ref no history',    sev: 'caution' },
-  'REF_THIN':       { label: 'Ref thin',          sev: 'caution' },
-  'ODDS_MISSING':   { label: 'No odds',           sev: 'caution' },
-  'H_FORM_THIN':    { label: 'H form thin',       sev: 'caution' },
-  'A_FORM_THIN':    { label: 'A form thin',       sev: 'caution' },
-  'H_6M_NONE':      { label: 'H no 6m data',      sev: 'caution' },
-  'A_6M_NONE':      { label: 'A no 6m data',      sev: 'caution' },
-  'H_FOULS_NA':     { label: 'H fouls n/a',       sev: 'caution' },
-  'A_FOULS_NA':     { label: 'A fouls n/a',       sev: 'caution' },
-  'H_TEAM_THIN':    { label: 'H sample thin',     sev: 'caution' },
-  'A_TEAM_THIN':    { label: 'A sample thin',     sev: 'caution' },
-  'H_FORM_NONE':    { label: 'H no form data',    sev: 'warn' },
-  'A_FORM_NONE':    { label: 'A no form data',    sev: 'warn' },
-  'LEAGUE_THIN':    { label: 'League thin',       sev: 'warn' },
-  'POOL_THIN':      { label: 'Pool thin',         sev: 'warn' },
-  'CHECK_INTL_ID':  { label: 'Check intl ID',     sev: 'warn' },
-  'NO_LEAGUE_DATA': { label: 'No league data',    sev: 'warn' },
-  'BAD_DATE':       { label: 'Bad date',          sev: 'warn' },
-  'MISSING_IDS':    { label: 'Missing IDs',       sev: 'warn' },
-  'H2H_HOT':        { label: 'H2H runs hot',      sev: 'info' },
-  'H2H_COLD':       { label: 'H2H runs cold',     sev: 'info' },
-  'REF_STRICT':     { label: 'Strict ref',        sev: 'info' },
-  'REF_LENIENT':    { label: 'Lenient ref',       sev: 'info' },
-  'PRED_HIGH':      { label: 'Above league avg',  sev: 'info' },
-  'PRED_LOW':       { label: 'Below league avg',  sev: 'info' },
-  'MISMATCH':       { label: 'One-sided game',    sev: 'info' },
-  'DISP_HIGH':      { label: 'Volatile league',   sev: 'info' },
-  'H_SPIKE':        { label: 'H spike game',      sev: 'info' },
-  'A_SPIKE':        { label: 'A spike game',      sev: 'info' },
-  'KNOCKOUT':       { label: 'Knockout stage',    sev: 'info' }
+  'NO_REF': { label: 'Ref TBC', sev: 'caution', title: 'Referee not announced',
+   desc: 'The fixture has no referee yet (blank or N/A), so the referee multiplier is set to a neutral 1.00. Referees are one of the biggest single drivers of card counts - a strict or lenient official can legitimately move this prediction by up to 20% in either direction once named.',
+   action: 'Treat this prediction as provisional. Referees are usually announced 1-3 days before kickoff - re-run the model once the name appears and check the prediction again before staking.' },
+  'REF_UNKNOWN': { label: 'Ref no history', sev: 'caution', title: 'Referee has no history in the data',
+   desc: 'A referee is named, but there are zero games for that exact name in the collected data. Either this is a genuinely new official, or the name is spelled differently here than in the stats (a common cause - initials, accents, surname particles). A neutral 1.00 multiplier was applied.',
+   action: 'Check the spelling against the Stats Lookup sheet first. If it is a genuine spelling mismatch, fixing it recovers his real history. If he is genuinely new, treat exactly like Ref TBC: the ref effect is unknown.' },
+  'REF_THIN': { label: 'Ref thin', sev: 'caution', title: 'Referee has a small sample',
+   desc: 'This referee has fewer than 6 usable games, so his multiplier is deliberately shrunk toward neutral 1.00. His true card tendency is barely expressed in the number yet - a genuinely strict or lenient official could look average simply because the data has not caught up.',
+   action: 'The prediction is safe to use, but do not build a betting case on this referee being strict or lenient - the model is intentionally not committing to that yet.' },
+  'ODDS_MISSING': { label: 'No odds', sev: 'caution', title: '1X2 odds not available',
+   desc: 'Match odds were missing when the model ran, so the competitiveness adjustment used its neutral fallback of 0.95 instead of the real value (which ranges 0.85 for a mismatch to 1.00 for an even game). The true adjustment could shift this total by a few percent in either direction.',
+   action: 'Refresh nearer kickoff once odds are posted - the hourly fixtures job usually fills them in. Fine for a first look, not for staking.' },
+  'H_FORM_THIN': { label: 'H form thin', sev: 'caution', title: 'Home team: little recent form data',
+   desc: 'The home side has fewer than 3 recent home games in this league, so their recent-form estimate is built on a very noisy sample. One rough game in a 2-game sample swings the number substantially.',
+   action: 'The prediction leans more on the league average than usual, which is safe but generic. Avoid team-specific reasoning (e.g. this team has been carding heavily) - the data cannot support it yet.' },
+  'A_FORM_THIN': { label: 'A form thin', sev: 'caution', title: 'Away team: little recent form data',
+   desc: 'The away side has fewer than 3 recent away games in this league, so their recent-form estimate is built on a very noisy sample. One rough game in a 2-game sample swings the number substantially.',
+   action: 'The prediction leans more on the league average than usual, which is safe but generic. Avoid team-specific reasoning - the data cannot support it yet.' },
+  'H_6M_NONE': { label: 'H no 6m data', sev: 'caution', title: 'Home team: no games in the last 6 months',
+   desc: 'The home side has history in this league, but none of it falls inside the last 180 days - typically a long break, a winter-league gap, or return from another division. The six-month component was substituted with the league average.',
+   action: 'First games back after a long gap are unpredictable - squads change, sharpness varies. Extra caution on tight lines.' },
+  'A_6M_NONE': { label: 'A no 6m data', sev: 'caution', title: 'Away team: no games in the last 6 months',
+   desc: 'The away side has history in this league, but none of it falls inside the last 180 days - typically a long break, a winter-league gap, or return from another division. The six-month component was substituted with the league average.',
+   action: 'First games back after a long gap are unpredictable - squads change, sharpness varies. Extra caution on tight lines.' },
+  'H_FOULS_NA': { label: 'H fouls n/a', sev: 'caution', title: 'Home team: foul data unavailable',
+   desc: 'Fewer than 3 of the home side\'s recent games have valid foul counts (the API often publishes fouls late for smaller competitions), so the foul-rate refinement was skipped for them. That refinement is worth at most plus or minus 7% - a polish, not a pillar.',
+   action: 'Nothing to do. The prediction is slightly less refined for this side but structurally sound.' },
+  'A_FOULS_NA': { label: 'A fouls n/a', sev: 'caution', title: 'Away team: foul data unavailable',
+   desc: 'Fewer than 3 of the away side\'s recent games have valid foul counts, so the foul-rate refinement was skipped for them. That refinement is worth at most plus or minus 7% - a polish, not a pillar.',
+   action: 'Nothing to do. The prediction is slightly less refined for this side but structurally sound.' },
+  'H_TEAM_THIN': { label: 'H sample thin', sev: 'caution', title: 'Home nation: few international games',
+   desc: 'This national team has fewer than 4 international games in the collected pool, so its rate is mostly the pooled international prior rather than its own observed behaviour. Its genuine card temperament (a fiery South American side vs a placid one) is barely reflected.',
+   action: 'Treat the number as a generic international estimate. Lower conviction, especially against a team you believe has a strong card identity.' },
+  'A_TEAM_THIN': { label: 'A sample thin', sev: 'caution', title: 'Away nation: few international games',
+   desc: 'This national team has fewer than 4 international games in the collected pool, so its rate is mostly the pooled international prior rather than its own observed behaviour. Its genuine card temperament is barely reflected.',
+   action: 'Treat the number as a generic international estimate. Lower conviction, especially against a team you believe has a strong card identity.' },
+  'H_FORM_NONE': { label: 'H no form data', sev: 'warn', title: 'Home team: zero history at this venue',
+   desc: 'The home side has no prior home games in this league at all - typically promoted, newly collected, or an ID change. Both of their form components were substituted with the league average, so this prediction effectively treats them as a perfectly average league team. Their real card tendencies are completely unknown to the model.',
+   action: 'Expect a wider error than normal. This is a prediction about the league, not about this team - prefer to pass, or stake minimally on generous lines only.' },
+  'A_FORM_NONE': { label: 'A no form data', sev: 'warn', title: 'Away team: zero history at this venue',
+   desc: 'The away side has no prior away games in this league at all - typically promoted, newly collected, or an ID change. Both of their form components were substituted with the league average, so this prediction effectively treats them as a perfectly average league team. Their real card tendencies are completely unknown to the model.',
+   action: 'Expect a wider error than normal. This is a prediction about the league, not about this team - prefer to pass, or stake minimally on generous lines only.' },
+  'LEAGUE_THIN': { label: 'League thin', sev: 'warn', title: 'League sample is small',
+   desc: 'Fewer than 30 games exist for this league in the last 365 days. A prediction was produced, but everything underneath it - the league card averages, the dispersion, the foul baselines - is built on a shaky sample. Typical for early season in a newly added league.',
+   action: 'Low confidence across the board. Small stakes or none until the league has a real sample - and note the dispersion shown is likely a fallback, not measured.' },
+  'POOL_THIN': { label: 'Pool thin', sev: 'warn', title: 'International pool is sparse',
+   desc: 'Fewer than 20 international games exist in the pooled sample, so this prediction is mostly the configured prior (2.20 weighted cards per team) rather than anything observed. The model is essentially answering what does an average international match look like.',
+   action: 'Avoid staking on tight lines - the number has almost no fixture-specific content. This resolves itself as the collector accumulates international games.' },
+  'CHECK_INTL_ID': { label: 'Check intl ID', sev: 'warn', title: 'Possible misrouted international fixture',
+   desc: 'This fixture was processed down the DOMESTIC path, but its competition name looks like national-team football (World Cup, qualifiers, etc). That almost always means the league ID is missing from the international set in the script - so instead of the pooled international data, the model used a nearly empty league silo, which badly deflates the prediction.',
+   action: 'Do not trust this number. Add the league ID to INTERNATIONAL_LEAGUE_IDS in the Apps Script and re-run - the prediction will typically rise substantially.' },
+  'NO_LEAGUE_DATA': { label: 'No league data', sev: 'warn', title: 'No data exists for this league',
+   desc: 'Zero games were found for this league in the last 365 days, so no meaningful prediction could be built - every output on this row is a zero or a default. Usually means the league is being predicted but not collected by the Python script.',
+   action: 'Never stake on this row. Check the league is in the HISTORICAL_LEAGUES or FIXTURE_LEAGUES list in the collector and that data has actually arrived.' },
+  'BAD_DATE': { label: 'Bad date', sev: 'warn', title: 'Fixture date could not be read',
+   desc: 'The date on this fixture row is unparseable. Since every calculation window (recent form, six months, league averages) is measured from the fixture date, the model refused to produce a prediction rather than silently output nonsense.',
+   action: 'Fix the date in column A of the Model tab (YYYY-MM-DD) and re-run. Never stake on this row.' },
+  'MISSING_IDS': { label: 'Missing IDs', sev: 'warn', title: 'Fixture is missing IDs',
+   desc: 'The row has no league ID or team ID, so the model could not look anything up. All outputs are zeros. Usually a collection glitch or a manually added row missing columns B-D.',
+   action: 'Fix the row in the Model tab and re-run. Never stake on this row.' },
+  'H2H_HOT': { label: 'H2H runs hot', sev: 'info', title: 'This fixture historically cards heavily',
+   desc: 'Across 3 or more meetings, these two teams average at least 30% MORE cards than this prediction. The model deliberately caps how much weight head-to-head history gets (statistically correct on average), but bookmakers face no such cap and often price fixture heat - rivalry, needle, bad blood - directly into the line. This is the classic pattern behind Under bets that look great on paper and lose to an 88th-minute melee.',
+   action: 'Before backing an Under here, check whether this is a known spicy fixture (derby, rivalry, recent controversy). If it is, reduce or pass - the model is blind to motivation. For Overs, this history is supportive context.' },
+  'H2H_COLD': { label: 'H2H runs cold', sev: 'info', title: 'This fixture historically stays quiet',
+   desc: 'Across 3 or more meetings, these two teams average at least 30% FEWER cards than this prediction. Whatever drives the model number (team form, referee), the actual history of this pairing runs tame - some matchups simply do not generate friction.',
+   action: 'Be cautious backing an Over that relies on this being a heated game - history says it usually is not. For Unders, supportive context.' },
+  'REF_STRICT': { label: 'Strict ref', sev: 'info', title: 'Referee is a major upward driver',
+   desc: 'The referee multiplier is at or above 1.12, meaning up to 12-20% of this prediction comes from the official being card-happy relative to his league and recent form. The exact multiplier is shown in the card footer next to his average. Important: this is a big single point of failure - if he is reassigned late, that portion of the edge evaporates instantly.',
+   action: 'Verify the appointment on matchday before staking an Over that leans on this. If the ref changes, re-run before betting.' },
+  'REF_LENIENT': { label: 'Lenient ref', sev: 'info', title: 'Referee is a major downward driver',
+   desc: 'The referee multiplier is at or below 0.88, meaning the official is suppressing this prediction relative to his league and recent form. Note this is RELATIVE - a ref averaging 5+ cards can still be the lenient one in a card-heavy league, and the multiplier also excludes his games involving these two teams and weights recent form heavily. The exact multiplier is in the card footer.',
+   action: 'Verify the appointment before staking an Under that leans on this. If his raw average looks high, check the footer multiplier - that is the number the model actually applied.' },
+  'PRED_HIGH': { label: 'Above league avg', sev: 'info', title: 'Prediction well above the league norm',
+   desc: 'This total is at least 20% above the league baseline - the model is making a strong claim that this game is unusually card-heavy. Backtesting shows the league average is a formidable benchmark: predictions that deviate hard from it are simultaneously where the biggest edges AND the biggest model errors live.',
+   action: 'Sanity-check what is driving it (strict ref? a form spike? hot H2H?) before staking. If the drivers look solid, this is a high-conviction spot; if one driver is fragile, trim the stake.' },
+  'PRED_LOW': { label: 'Below league avg', sev: 'info', title: 'Prediction well below the league norm',
+   desc: 'This total is at least 20% below the league baseline - the model is making a strong claim that this game stays unusually quiet. Strong deviations from the league average are where both the biggest edges and the biggest model errors concentrate, so this number deserves scrutiny before an Under.',
+   action: 'Check the drivers (lenient ref? quiet form?) and especially check the market: if the bookmaker line implies far more cards than the model, ask what they might know (rivalry, stakes, team news) that the model cannot see.' },
+  'MISMATCH': { label: 'One-sided game', sev: 'info', title: 'Big favourite - card suppression likely',
+   desc: 'The 1X2 odds say this game is heavily one-sided (competitiveness adjustment at or below 0.88). Lopsided games consistently produce fewer cards - less midfield fighting, earlier game-state resolution, the favourite coasting. The model already discounts for this, but blowouts can undershoot even that.',
+   action: 'Supportive context for Unders. Be wary of Over cases that implicitly assume a competitive, niggly 90 minutes - the odds say that is unlikely.' },
+  'DISP_HIGH': { label: 'Volatile league', sev: 'info', title: 'High-variance league',
+   desc: 'This league\'s dispersion is 1.40 or above - card counts swing far more widely game to game than a normal league. Two consequences: single-game outcomes are less predictable around ANY forecast, and the model\'s own inputs (team rates, ref rates) are noisier here, so the same displayed edge carries less true edge.',
+   action: 'Always pass this sigma to the bot - at 1.40+ it automatically halves the stake, which is the correct response. Never max stakes in these leagues regardless of how big the edge looks.' },
+  'H_SPIKE': { label: 'H spike game', sev: 'info', title: 'Home form inflated by one wild game',
+   desc: 'The home side\'s recent window contains a game of 4+ weighted cards AND their recent rate is running at least 15% above their six-month rate. In plain terms: one bloodbath is dragging their form number up, and card spikes like this overwhelmingly regress - it was probably a specific ref, opponent, or incident, not a changed team.',
+   action: 'Discount Over cases built on this team being in carding form - their six-month rate is the better guide to the next game. This is the recency-noise pattern the backtest flagged.' },
+  'A_SPIKE': { label: 'A spike game', sev: 'info', title: 'Away form inflated by one wild game',
+   desc: 'The away side\'s recent window contains a game of 4+ weighted cards AND their recent rate is running at least 15% above their six-month rate. One bloodbath is dragging their form number up, and card spikes like this overwhelmingly regress - it was probably a specific ref, opponent, or incident, not a changed team.',
+   action: 'Discount Over cases built on this team being in carding form - their six-month rate is the better guide to the next game.' },
+  'KNOCKOUT': { label: 'Knockout stage', sev: 'info', title: 'Tournament knockout bump applied',
+   desc: 'This is an international fixture dated in the knockout phase, so the prediction includes the stage multiplier (x1.10). Cards rise in knockouts - higher stakes, tactical fouling, extra tension - and that is already baked into this number.',
+   action: 'Nothing to do - just be aware roughly 10% of this total is the stage bump, not team or referee data. If your market settles on 90 minutes only, remember extra time is a separate question.' }
  };
  const FLAG_CLASS = { warn: 'flag-warn', caution: 'flag-caution', info: 'flag-info' };
+ const SEV_LABEL = { warn: 'Data problem', caution: 'Provisional', info: 'Insight' };
  function renderFlags(flagStr) {
   if (!flagStr) return '';
   const codes = String(flagStr).split(',').map(s => s.trim()).filter(Boolean);
   if (!codes.length) return '';
-  // warn first, then caution, then info — most serious reads first
   const order = { warn: 0, caution: 1, info: 2 };
-  const metas = codes.map(code => FLAG_META[code] || { label: code.replace(/_/g, ' '), sev: 'caution' });
-  metas.sort((a, b) => (order[a.sev] || 1) - (order[b.sev] || 1));
-  const pills = metas.map(meta =>
-   `<span class="flag-pill ${FLAG_CLASS[meta.sev] || 'flag-caution'}">${meta.label}</span>`
+  const items = codes.map(code => ({
+   code: code,
+   meta: FLAG_META[code] || { label: code.replace(/_/g, ' '), sev: 'caution' }
+  }));
+  items.sort((a, b) => (order[a.meta.sev] || 1) - (order[b.meta.sev] || 1));
+  const pills = items.map(it =>
+   `<span class="flag-pill ${FLAG_CLASS[it.meta.sev] || 'flag-caution'}" onclick="event.stopPropagation(); showFlagInfo('${it.code}', this)">${it.meta.label}</span>`
   ).join('');
   return `<div class="flags-row">${pills}</div>`;
+ }
+ // ── Flag explanation bottom sheet ──
+ let activeFlagPill = null;
+ function showFlagInfo(code, el) {
+  const meta = FLAG_META[code] || {
+   label: code.replace(/_/g, ' '), sev: 'caution',
+   title: code.replace(/_/g, ' '),
+   desc: 'No detailed description is available for this flag code. It was emitted by the model but is not in this page\'s definitions - it may have been added in a newer script version.',
+   action: 'Treat the prediction with mild caution and update the web page definitions.'
+  };
+  const sev = meta.sev || 'caution';
+  document.getElementById('flagSheetContent').innerHTML =
+   `<div class="flag-sheet-head">
+     <span class="flag-pill ${FLAG_CLASS[sev]}">${SEV_LABEL[sev] || 'Info'}</span>
+     <span class="flag-sheet-title">${meta.title || meta.label}</span>
+    </div>
+    <div class="flag-sheet-body"><p>${meta.desc || ''}</p></div>
+    <div class="flag-action">
+     <div class="flag-action-label">What to do</div>
+     ${meta.action || ''}
+    </div>`;
+  document.getElementById('flagBackdrop').classList.add('open');
+  document.getElementById('flagSheet').classList.add('open');
+  if (activeFlagPill) activeFlagPill.classList.remove('selected');
+  if (el) { el.classList.add('selected'); activeFlagPill = el; }
+ }
+ function closeFlagInfo() {
+  document.getElementById('flagBackdrop').classList.remove('open');
+  document.getElementById('flagSheet').classList.remove('open');
+  if (activeFlagPill) { activeFlagPill.classList.remove('selected'); activeFlagPill = null; }
  }
  
  // ═══════════════════════════════════════════════════
@@ -791,6 +933,7 @@
  // RENDER
  // ═══════════════════════════════════════════════════
  function renderApp(rows) {
+  closeFlagInfo();
   const container = document.getElementById('app-container');
   if (rows.length === 0) {
    if (showFavsOnly) {
@@ -810,6 +953,10 @@
    const ref = row[C.referee] || 'TBC';
    const refApps = row[C.refGames] || '0';
    const refAvg = parseFloat(row[C.refTotal] || 0).toFixed(2);
+   const refModNum = parseFloat(row[C.refMod]);
+   const refModHTML = (!isNaN(refModNum) && refModNum > 0 && refModNum !== 1)
+    ? ` <span style="color:var(--text-muted);font-weight:600;">\u00D7${refModNum.toFixed(2)}</span>`
+    : '';
    const oddsH = row[C.odds1] || '-';
    const oddsD = row[C.oddsX] || '-';
    const oddsA = row[C.odds2] || '-';
@@ -918,7 +1065,7 @@
       <span class="ref-name">${ref}</span>
       <span class="ref-apps">(${refApps})</span>
      </span>
-     <span class="ref-stat ${refClass}">Avg: ${refAvg}</span>
+     <span class="ref-stat ${refClass}">Avg: ${refAvg}${refModHTML}</span>
     </div>
    `;
    fragment.appendChild(cardEl);
@@ -979,6 +1126,7 @@
  // KEYBOARD NAV
  // ═══════════════════════════════════════════════════
  document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { closeFlagInfo(); return; }
   if (e.key === 'ArrowLeft') changeDate(-1);
   if (e.key === 'ArrowRight') changeDate(1);
  });
