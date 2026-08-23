@@ -351,6 +351,10 @@
   background: var(--accent-glow); color: var(--accent);
   border: 1px solid rgba(29, 155, 240, 0.3);
  }
+ .flag-method {
+  background: var(--border-light); color: var(--text-muted);
+  border: 1px solid var(--border);
+ }
  .flag-pill { cursor: pointer; transition: transform 0.15s; }
  .flag-pill:active { transform: scale(0.94); }
  .flag-pill.selected { box-shadow: 0 0 0 2px currentColor; }
@@ -670,17 +674,23 @@
   'A_SPIKE': { label: 'A spike game', sev: 'info', title: 'Away form inflated by one wild game',
    desc: 'The away side\'s recent window contains a game of 4+ weighted cards AND their recent rate is running at least 15% above their six-month rate. One bloodbath is dragging their form number up, and card spikes like this overwhelmingly regress - it was probably a specific ref, opponent, or incident, not a changed team.',
    action: 'Discount Over cases built on this team being in carding form - their six-month rate is the better guide to the next game.' },
+  'REF_CPF': { label: 'Ref: cards/foul', sev: 'method', title: 'Referee measured by cards per foul',
+   desc: 'This is a METHOD note, not a warning - it confirms the model used its most accurate referee calculation for this fixture. Instead of dividing the referee\'s card average by the league average, it summed every card AND every foul across his neutral games, took the ratio, and compared it to the league\'s cards-per-foul rate. That separates a referee who genuinely reaches for his pocket from one who simply keeps getting assigned scrappy, foul-heavy fixtures - the old method confused the two. Backtesting showed this single change was the largest accuracy gain available (MAE 1.906 to 1.874 across 3,000 games). It requires at least 5 of the referee\'s games to carry valid foul data.',
+   action: 'Nothing to do - this is the good path. Its ABSENCE is what to notice: a fixture without this flag fell back to the older cards-per-game method, usually because foul data is thin for that referee or competition, and his multiplier is slightly less reliable as a result.' },
+  'FOUL_LAMBDA': { label: 'Foul-blend used', sev: 'method', title: 'Foul-based lambda blended in',
+   desc: 'Another METHOD note confirming an accuracy upgrade ran. Alongside the normal card-history prediction, the model estimated how many fouls each side is likely to commit (their own recent foul rate combined with how many fouls their opponent tends to draw, both relative to the league), then multiplied by the league\'s cards-per-foul rate. That produces a second, independent estimate of each side\'s cards, blended in at 25% weight. It helps because a match contains roughly 22 fouls but only about 4 cards - foul rates are a far more stable, lower-noise signal than card counts, so they steady the estimate. It needs at least 5 games with valid foul data per side.',
+   action: 'Nothing to do. Note it is deliberately only a 25% blend - foul data alone tested WORSE, because it misses cards that no foul precedes (dissent, diving, time-wasting). Its absence means foul data was too thin and the prediction ran on card history alone.' },
   'KNOCKOUT': { label: 'Knockout stage', sev: 'info', title: 'Tournament knockout bump applied',
    desc: 'This is an international fixture dated in the knockout phase, so the prediction includes the stage multiplier (x1.10). Cards rise in knockouts - higher stakes, tactical fouling, extra tension - and that is already baked into this number.',
    action: 'Nothing to do - just be aware roughly 10% of this total is the stage bump, not team or referee data. If your market settles on 90 minutes only, remember extra time is a separate question.' }
  };
- const FLAG_CLASS = { warn: 'flag-warn', caution: 'flag-caution', info: 'flag-info' };
- const SEV_LABEL = { warn: 'Data problem', caution: 'Provisional', info: 'Insight' };
+ const FLAG_CLASS = { warn: 'flag-warn', caution: 'flag-caution', info: 'flag-info', method: 'flag-method' };
+ const SEV_LABEL = { warn: 'Data problem', caution: 'Provisional', info: 'Insight', method: 'Method' };
  function renderFlags(flagStr) {
   if (!flagStr) return '';
   const codes = String(flagStr).split(',').map(s => s.trim()).filter(Boolean);
   if (!codes.length) return '';
-  const order = { warn: 0, caution: 1, info: 2 };
+  const order = { warn: 0, caution: 1, info: 2, method: 3 };
   const items = codes.map(code => ({
    code: code,
    meta: FLAG_META[code] || { label: code.replace(/_/g, ' '), sev: 'caution' }
