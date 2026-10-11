@@ -299,7 +299,7 @@
   color: var(--text-muted);
   border: 1px solid var(--border);
  }
- /* v16: v15.8 comparison figure under the total */
+ /* v16.1: the two halves under the total */
  .legacy-note {
   display: block; margin-top: 4px;
   font-family: var(--font-mono); font-size: 9px; font-weight: 600;
@@ -579,8 +579,9 @@
   kickoff: 23,       // X
   dispersion: 24,    // Y
   flags: 25,         // Z (v15.2 model flags)
-  refMod: 26,        // AA (v16: joint referee rating)
-  legacyTC: 27       // AB (v16: v15.8's total, for side-by-side comparison)
+  refMod: 26,        // AA (blended referee multiplier)
+  v158TC: 27,        // AB (v16.1: the v15.8 half)
+  v16TC: 28          // AC (v16.1: the v16 half)
  };
  
  // ═══════════════════════════════════════════════════
@@ -598,46 +599,46 @@
    desc: 'A referee is named, but there are zero games for that exact name in this competition in the collected data. Either this is a genuinely new official, or the name is spelled differently here than in the stats (a common cause - initials, accents, surname particles). A neutral 1.00 rating was applied.',
    action: 'Check the spelling against the Stats Lookup sheet first. If it is a genuine spelling mismatch, fixing it recovers his real history. If he is genuinely new, treat exactly like Ref TBC: the ref effect is unknown.' },
   'REF_THIN': { label: 'Ref thin', sev: 'caution', title: 'Referee has a small sample',
-   desc: 'This referee has fewer than 6 games in this competition in the last 3 years, so his rating is deliberately shrunk toward neutral 1.00. A genuinely strict or lenient official can look average simply because the data has not caught up.',
+   desc: 'This referee has fewer than 6 usable games, so both halves deliberately shrink his multiplier toward neutral 1.00. A genuinely strict or lenient official can look average simply because the data has not caught up.',
    action: 'The prediction is safe to use, but do not build a betting case on this referee being strict or lenient - the model is intentionally not committing to that yet.' },
   'ODDS_MISSING': { label: 'No odds', sev: 'caution', title: '1X2 odds not available',
    desc: 'Match odds were missing when the model ran, so the one-sided-game adjustment was left at a neutral 1.00. With odds it ranges from 0.85 (heavy mismatch, fewer cards) to 1.04 (coin-flip game), so the real number could be a few percent different - usually lower if the game turns out to be one-sided.',
    action: 'Refresh nearer kickoff once odds are posted - the hourly fixtures job usually fills them in. Fine for a first look, not for staking.' },
   'DERBY': { label: 'Derby', sev: 'info', title: 'Derby boost applied',
-   desc: 'This fixture is on the derby list, so the prediction includes a derby boost: x1.18 in European leagues, x1.25 in Brazil and Argentina, x1.10 in Greece, and x1.35 when a derby is played in a cup. Every model tested (v15.8 included) badly under-predicted derbies: 542 major derbies from 2022-26 averaged 5.62 cards against 4.76 predicted. The boost was measured on 2022-25 and held up on the unseen 2025-26 season. It is an average across derbies - some run hotter (Boca v River, Fla-Flu), some cooler (Man City v Man Utd).',
-   action: 'The number already includes the boost - do not add more on top for the occasion. Be careful with Unders: bookmakers price derby heat, and before v16 the model did not, which made derby Unders look like value when they were not.' },
-  'LEGACY_MODEL': { label: 'Old method', sev: 'caution', title: 'Ran on the old v15.8 method',
-   desc: 'This competition has fewer than 30 games in the last 3 years - too few to fit the v16 rating model - so the prediction came from the older v15.8 method (venue form, H2H weighting, referee cards-per-foul). That method tested no better than the plain league average on unseen games.',
+   desc: 'This fixture is on the derby list, so both halves get a derby boost before they are averaged - overall about x1.20 in European leagues, x1.30 in Brazil and Argentina, x1.12 in Greece and x1.40 when a derby is played in a cup. Every model tested (v15.8 included) badly under-predicted derbies: 542 major derbies from 2022-26 averaged 5.62 cards against 4.57 for v15.8. The boost is an average across derbies - some run hotter (Boca v River, Fla-Flu), some cooler (Man City v Man Utd).',
+   action: 'The number already includes the boost - do not add more on top for the occasion. Be careful with Unders: bookmakers price derby heat, and before this version the model did not, which made derby Unders look like value when they were not.' },
+  'LEGACY_MODEL': { label: 'v15.8 only', sev: 'caution', title: 'v15.8 calculation only (no v16 half)',
+   desc: 'This competition has fewer than 30 games in the last 3 years - too few to fit the v16 rating model - so this number is the v15.8 calculation alone (plus the derby boost if it applies), not the 50/50 hybrid. On its own, v15.8 tested no better than the league average on unseen games.',
    action: 'Treat as a rough estimate only - small stakes or pass. Usually affects one-off games (Community Shield, Super Cups) and newly added competitions.' },
   'H_HIST_NONE': { label: 'H no history', sev: 'warn', title: 'Home team: no games in this competition',
-   desc: 'The home side has no games in this competition in the last 3 years - typically promoted, newly collected, or an ID change. The model treats them as an exactly average team here, so this prediction is about the competition, the opponent and the referee, not about them.',
+   desc: 'The home side has no games in this competition in the last 3 years - typically promoted, newly collected, or an ID change. The v16 half treats them as an exactly average team, and the v15.8 half falls back to the league average too, so this prediction is about the competition, the opponent and the referee, not about them.',
    action: 'Expect a wider error than normal. Prefer to pass, or stake small on generous lines only.' },
   'A_HIST_NONE': { label: 'A no history', sev: 'warn', title: 'Away team: no games in this competition',
-   desc: 'The away side has no games in this competition in the last 3 years - typically promoted, newly collected, or an ID change. The model treats them as an exactly average team here, so this prediction is about the competition, the opponent and the referee, not about them.',
+   desc: 'The away side has no games in this competition in the last 3 years - typically promoted, newly collected, or an ID change. The v16 half treats them as an exactly average team, and the v15.8 half falls back to the league average too, so this prediction is about the competition, the opponent and the referee, not about them.',
    action: 'Expect a wider error than normal. Prefer to pass, or stake small on generous lines only.' },
   'H_HIST_THIN': { label: 'H history thin', sev: 'caution', title: 'Home team: little history in this competition',
-   desc: 'The home side has fewer than 8 games in this competition in the last 3 years, so its rating is deliberately pulled toward average. Its true card tendency is only partly reflected - common for promoted teams early in a season, and in cups.',
+   desc: 'The home side has fewer than 8 games in this competition in the last 3 years, so the v16 half pulls its rating toward average. Its true card tendency is only partly reflected - common for promoted teams early in a season, and in cups.',
    action: 'Fine to use, but do not lean on team-specific reasoning for this side - the model is intentionally cautious about it.' },
   'A_HIST_THIN': { label: 'A history thin', sev: 'caution', title: 'Away team: little history in this competition',
-   desc: 'The away side has fewer than 8 games in this competition in the last 3 years, so its rating is deliberately pulled toward average. Its true card tendency is only partly reflected - common for promoted teams early in a season, and in cups.',
+   desc: 'The away side has fewer than 8 games in this competition in the last 3 years, so the v16 half pulls its rating toward average. Its true card tendency is only partly reflected - common for promoted teams early in a season, and in cups.',
    action: 'Fine to use, but do not lean on team-specific reasoning for this side - the model is intentionally cautious about it.' },
   'H_FORM_THIN': { label: 'H form thin', sev: 'caution', title: 'Home team: little recent form data',
-   desc: 'Old-method flag (only on fixtures marked Old method). The home side has fewer than 3 recent home games in this league, so their recent-form estimate is built on a very noisy sample. One rough game in a 2-game sample swings the number substantially.',
+   desc: 'Applies to the v15.8 half of the number. The home side has fewer than 3 recent home games in this league, so their recent-form estimate is built on a very noisy sample. One rough game in a 2-game sample swings the number substantially.',
    action: 'The prediction leans more on the league average than usual, which is safe but generic. Avoid team-specific reasoning (e.g. this team has been carding heavily) - the data cannot support it yet.' },
   'A_FORM_THIN': { label: 'A form thin', sev: 'caution', title: 'Away team: little recent form data',
-   desc: 'Old-method flag (only on fixtures marked Old method). The away side has fewer than 3 recent away games in this league, so their recent-form estimate is built on a very noisy sample. One rough game in a 2-game sample swings the number substantially.',
+   desc: 'Applies to the v15.8 half of the number. The away side has fewer than 3 recent away games in this league, so their recent-form estimate is built on a very noisy sample. One rough game in a 2-game sample swings the number substantially.',
    action: 'The prediction leans more on the league average than usual, which is safe but generic. Avoid team-specific reasoning - the data cannot support it yet.' },
   'H_6M_NONE': { label: 'H no 6m data', sev: 'caution', title: 'Home team: no games in the last 6 months',
-   desc: 'Old-method flag (only on fixtures marked Old method). The home side has history in this league, but none of it falls inside the last 180 days - typically a long break, a winter-league gap, or return from another division. The six-month component was substituted with the league average.',
+   desc: 'Applies to the v15.8 half of the number. The home side has history in this league, but none of it falls inside the last 180 days - typically a long break, a winter-league gap, or return from another division. The six-month component was substituted with the league average.',
    action: 'First games back after a long gap are unpredictable - squads change, sharpness varies. Extra caution on tight lines.' },
   'A_6M_NONE': { label: 'A no 6m data', sev: 'caution', title: 'Away team: no games in the last 6 months',
-   desc: 'Old-method flag (only on fixtures marked Old method). The away side has history in this league, but none of it falls inside the last 180 days - typically a long break, a winter-league gap, or return from another division. The six-month component was substituted with the league average.',
+   desc: 'Applies to the v15.8 half of the number. The away side has history in this league, but none of it falls inside the last 180 days - typically a long break, a winter-league gap, or return from another division. The six-month component was substituted with the league average.',
    action: 'First games back after a long gap are unpredictable - squads change, sharpness varies. Extra caution on tight lines.' },
   'H_FOULS_NA': { label: 'H fouls n/a', sev: 'caution', title: 'Home team: foul data unavailable',
-   desc: 'Old-method flag (only on fixtures marked Old method). Fewer than 3 of the home side\'s recent games have valid foul counts, so the old foul-rate refinement (worth at most plus or minus 7%) was skipped for them.',
+   desc: 'Applies to the v15.8 half of the number. Fewer than 3 of the home side\'s recent games have valid foul counts, so the old foul-rate refinement (worth at most plus or minus 7%) was skipped for them.',
    action: 'Nothing to do. The prediction is slightly less refined for this side but structurally sound.' },
   'A_FOULS_NA': { label: 'A fouls n/a', sev: 'caution', title: 'Away team: foul data unavailable',
-   desc: 'Old-method flag (only on fixtures marked Old method). Fewer than 3 of the away side\'s recent games have valid foul counts, so the old foul-rate refinement (worth at most plus or minus 7%) was skipped for them.',
+   desc: 'Applies to the v15.8 half of the number. Fewer than 3 of the away side\'s recent games have valid foul counts, so the old foul-rate refinement (worth at most plus or minus 7%) was skipped for them.',
    action: 'Nothing to do. The prediction is slightly less refined for this side but structurally sound.' },
   'H_TEAM_THIN': { label: 'H sample thin', sev: 'caution', title: 'Home nation: few international games',
    desc: 'This national team has fewer than 4 international games in the collected pool, so its rate is mostly the pooled international prior rather than its own observed behaviour. Its genuine card temperament (a fiery South American side vs a placid one) is barely reflected.',
@@ -646,10 +647,10 @@
    desc: 'This national team has fewer than 4 international games in the collected pool, so its rate is mostly the pooled international prior rather than its own observed behaviour. Its genuine card temperament is barely reflected.',
    action: 'Treat the number as a generic international estimate. Lower conviction, especially against a team you believe has a strong card identity.' },
   'H_FORM_NONE': { label: 'H no form data', sev: 'warn', title: 'Home team: zero history at this venue',
-   desc: 'Old-method flag (only on fixtures marked Old method). The home side has no prior home games in this league at all - typically promoted, newly collected, or an ID change. This prediction effectively treats them as a perfectly average league team.',
+   desc: 'Applies to the v15.8 half of the number. The home side has no prior home games in this league at all - typically promoted, newly collected, or an ID change. This prediction effectively treats them as a perfectly average league team.',
    action: 'Expect a wider error than normal. This is a prediction about the league, not about this team - prefer to pass, or stake minimally on generous lines only.' },
   'A_FORM_NONE': { label: 'A no form data', sev: 'warn', title: 'Away team: zero history at this venue',
-   desc: 'Old-method flag (only on fixtures marked Old method). The away side has no prior away games in this league at all - typically promoted, newly collected, or an ID change. This prediction effectively treats them as a perfectly average league team.',
+   desc: 'Applies to the v15.8 half of the number. The away side has no prior away games in this league at all - typically promoted, newly collected, or an ID change. This prediction effectively treats them as a perfectly average league team.',
    action: 'Expect a wider error than normal. This is a prediction about the league, not about this team - prefer to pass, or stake minimally on generous lines only.' },
   'LEAGUE_THIN': { label: 'League thin', sev: 'warn', title: 'League sample is small',
    desc: 'Fewer than 30 games exist for this league in the last 365 days. A prediction was produced, but everything underneath it - the league card averages, the dispersion, the foul baselines - is built on a shaky sample. Typical for early season in a newly added league.',
@@ -670,23 +671,23 @@
    desc: 'The row has no league ID or team ID, so the model could not look anything up. All outputs are zeros. Usually a collection glitch or a manually added row missing columns B-D.',
    action: 'Fix the row in the Model tab and re-run. Never stake on this row.' },
   'H2H_HOT': { label: 'H2H runs hot', sev: 'info', title: 'This fixture historically cards heavily',
-   desc: 'International fixtures only (from v16). Across 3 or more meetings, these two nations average at least 30% more cards than this prediction. For club games this flag is no longer shown: tested on 3,000+ games, H2H history did not predict cards beyond what the v16 model already knows - when H2H sat 1.5+ cards above the model, games finished at the model\'s number. The one real exception, derbies, has its own Derby flag.',
-   action: 'For an international game, check for a genuine rivalry or high stakes before backing an Under. For club games, do not adjust for H2H averages on their own.' },
+   desc: 'Across 3 or more meetings, these two teams average at least 30% more cards than this prediction. Tested against the 50/50 hybrid on the unseen 2025-26 season (496 games): games with this flag finished in line with the hybrid\'s number (+0.03 cards on average), even though their H2H average was 6.5. The hybrid already reflects what H2H history tells you; the one real exception is derbies, which get their own boost.',
+   action: 'Treat as background only - do not add extra cards for H2H on its own. If it is a rivalry, check for the Derby flag.' },
   'H2H_COLD': { label: 'H2H runs cold', sev: 'info', title: 'This fixture historically stays quiet',
-   desc: 'International fixtures only (from v16). Across 3 or more meetings, these two nations average at least 30% fewer cards than this prediction. For club games this flag is no longer shown, because H2H history tested as having no predictive value beyond the v16 model.',
-   action: 'Mild supporting context for an Under in an international game. Not a reason on its own to bet.' },
+   desc: 'Across 3 or more meetings, these two teams average at least 30% fewer cards than this prediction. In testing against the 50/50 hybrid (397 games) these games finished slightly below the hybrid\'s number (-0.17 cards), which is within normal noise.',
+   action: 'Mild supporting context for an Under at most. Not a reason on its own to bet.' },
   'REF_STRICT': { label: 'Strict ref', sev: 'info', title: 'Referee is a major upward driver',
-   desc: 'The referee rating is 1.10 or higher: compared with what the teams in his games would normally produce, he gives at least 10% more cards. About 1 game in 12 gets this flag. The rating is the multiplier shown in the card footer next to his raw average. If he is reassigned late, that part of the number disappears.',
-   action: 'Verify the appointment on matchday before staking an Over that leans on this. If the ref changes, re-run before betting.' },
+   desc: 'The blended referee multiplier (half v15.8\'s cards-per-foul measure, half v16\'s referee rating) is 1.12 or higher. It is shown in the card footer next to his raw average. Worth knowing from testing: games with a strict referee finished about a quarter of a card BELOW the hybrid\'s number on average - the v15.8 half overrates referees - so the strictness is already fully priced in.',
+   action: 'Do not add anything extra for him. Verify the appointment on matchday before staking an Over that leans on this, and re-run if he changes.' },
   'REF_LENIENT': { label: 'Lenient ref', sev: 'info', title: 'Referee is a major downward driver',
-   desc: 'The referee rating is 0.90 or lower: he gives at least 10% fewer cards than the teams in his games would normally produce. This is measured against the teams he had, so his raw average (in the footer) can look high in a card-heavy league and he can still be the lenient one.',
+   desc: 'The blended referee multiplier is 0.88 or lower. This is relative to his league and the teams he had, so his raw average (in the footer) can look high in a card-heavy league and he can still be the lenient one. In testing, lenient-referee games finished in line with the hybrid\'s number.',
    action: 'Verify the appointment before staking an Under that leans on this. The footer multiplier is the number the model actually applied.' },
   'PRED_HIGH': { label: 'Above league avg', sev: 'info', title: 'Prediction well above the league norm',
-   desc: 'This total is at least 20% above the league baseline. In testing, about 87% of the v16 model\'s predicted gap from the league average actually happened (v15.8: about 51%), so a strong deviation now means much more than it used to - but it is still where the biggest single-game errors live.',
-   action: 'Check what is driving it (strict ref, a derby, card-prone teams). If the drivers are solid, this is a genuine spot; if the referee is still unconfirmed, wait.' },
+   desc: 'This total is at least 20% above the league baseline. In testing, about 80% of the hybrid\'s predicted gap from the league average actually happened (v15.8 alone: about 51%), so a strong deviation means much more than it used to - but it is still where the biggest single-game errors live.',
+   action: 'Check what is driving it (strict ref, a derby, card-prone teams). If both halves agree (see the two numbers under the total), it is a stronger spot; if they disagree a lot, trim the stake.' },
   'PRED_LOW': { label: 'Below league avg', sev: 'info', title: 'Prediction well below the league norm',
-   desc: 'This total is at least 20% below the league baseline - the model expects an unusually quiet game. About 87% of predicted gaps from the league average held up in testing, but check the market too.',
-   action: 'Check the drivers (lenient ref? quiet teams?) and the market: if the bookmaker line implies far more cards than the model, ask what they might know (team news, stakes) that the model cannot see.' },
+   desc: 'This total is at least 20% below the league baseline - the model expects an unusually quiet game. About 80% of the hybrid\'s predicted gaps from the league average held up in testing, but check the market too.',
+   action: 'Check the drivers and the market: if the bookmaker line implies far more cards than the model, ask what they might know (team news, stakes) that the model cannot see. Stronger if both halves agree.' },
   'MISMATCH': { label: 'One-sided game', sev: 'info', title: 'Big favourite - card suppression likely',
    desc: 'The 1X2 odds say this game is heavily one-sided (adjustment at or below 0.93). Lopsided games consistently produce fewer cards - less midfield fighting, earlier game-state resolution, the favourite coasting. Re-tested for v16: team ratings do not capture this on their own, so the discount is applied on top.',
    action: 'Supportive context for Unders. Be wary of Over cases that implicitly assume a competitive, niggly 90 minutes - the odds say that is unlikely.' },
@@ -694,14 +695,14 @@
    desc: 'This league\'s dispersion is 1.40 or above - card counts swing far more widely game to game than a normal league. Single-game outcomes are less predictable around ANY forecast, so the same displayed edge carries less true edge.',
    action: 'Always pass this sigma to the bot - at 1.40+ it automatically halves the stake, which is the correct response. Never max stakes in these leagues regardless of how big the edge looks.' },
   'H_SPIKE': { label: 'H spike game', sev: 'info', title: 'Home form inflated by one wild game',
-   desc: 'Old-method flag (only on fixtures marked Old method). The home side\'s recent window contains a game of 4+ weighted cards AND their recent rate is running at least 15% above their six-month rate - one bloodbath is dragging their form number up.',
+   desc: 'Applies to the v15.8 half of the number. The home side\'s recent window contains a game of 4+ weighted cards AND their recent rate is running at least 15% above their six-month rate - one bloodbath is dragging their form number up.',
    action: 'Discount Over cases built on this team being in carding form - their longer-run rate is the better guide to the next game.' },
   'A_SPIKE': { label: 'A spike game', sev: 'info', title: 'Away form inflated by one wild game',
-   desc: 'Old-method flag (only on fixtures marked Old method). The away side\'s recent window contains a game of 4+ weighted cards AND their recent rate is running at least 15% above their six-month rate - one bloodbath is dragging their form number up.',
+   desc: 'Applies to the v15.8 half of the number. The away side\'s recent window contains a game of 4+ weighted cards AND their recent rate is running at least 15% above their six-month rate - one bloodbath is dragging their form number up.',
    action: 'Discount Over cases built on this team being in carding form - their longer-run rate is the better guide to the next game.' },
-  'REF_CPF': { label: 'Ref: cards/foul', sev: 'method', title: 'Referee measured by cards per foul',
-   desc: 'Old-method note (only on fixtures marked Old method). The referee was measured by cards per foul. In the v16 review this measure turned out weaker than the referee\'s plain card average, and both were replaced by the joint referee rating, which measures him against the teams he actually had.',
-   action: 'Nothing to do.' },
+  'REF_CPF': { label: 'Ref: cards/foul', sev: 'method', title: 'Referee measured by cards per foul (v15.8 half)',
+   desc: 'Method note for the v15.8 half: the referee was measured by his cards per foul, compared with the league. The v16 half measures him differently - against what the teams in his games would normally produce - and the two are averaged into the footer multiplier.',
+   action: 'Nothing to do. Its absence means the v15.8 half fell back to the older cards-per-game method for this referee.' },
   'FOUL_LAMBDA': { label: 'Foul-blend used', sev: 'method', title: 'Foul-based estimate blended in',
    desc: 'Method note confirming an accuracy step ran. Alongside the card-based rating, the model estimated how many fouls each side is likely to commit (their own recent foul rate combined with how many fouls their opponent tends to draw, both relative to the league), then multiplied by the league\'s cards-per-foul rate. That second estimate is blended in at 25% weight. It still improves accuracy on top of the v16 rating model. It needs at least 5 games with valid foul data per side.',
    action: 'Nothing to do. Its absence means foul data was too thin and the prediction ran on the card ratings alone.' },
@@ -1004,9 +1005,12 @@
    const disp = parseFloat(row[C.dispersion] || 0);
    const dispDisplay = disp > 0 ? disp.toFixed(2) : '--';
    const flagsHTML = renderFlags(row[C.flags]);
-   const legacyNum = parseFloat(row[C.legacyTC]);
-   const legacyHTML = (!isNaN(legacyNum) && legacyNum > 0)
-    ? `<span class="legacy-note" title="What the old v15.8 model predicted">v15.8: ${legacyNum.toFixed(2)}</span>`
+   const v158Num = parseFloat(row[C.v158TC]), v16Num = parseFloat(row[C.v16TC]);
+   const parts = [];
+   if (!isNaN(v158Num) && v158Num > 0) parts.push(`v15.8 ${v158Num.toFixed(2)}`);
+   if (!isNaN(v16Num) && v16Num > 0) parts.push(`v16 ${v16Num.toFixed(2)}`);
+   const legacyHTML = parts.length
+    ? `<span class="legacy-note" title="The two halves of the hybrid; the total is their average">${parts.join(' \u00B7 ')}</span>`
     : '';
    const matchKey = getMatchKey(row);
    const isFav = favorites[matchKey];
